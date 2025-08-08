@@ -1,0 +1,1 @@
+create a lock screen app that simply displays a QR code generated for the info or documents set by the user, giving them easy access to quick info they might want to give someone else. the lock screen should avoid putting notifications over the QR code, and otherwise operate exactly the same as Androids default lock screen.
