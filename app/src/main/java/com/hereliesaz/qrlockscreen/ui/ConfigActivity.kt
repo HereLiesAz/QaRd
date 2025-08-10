@@ -21,7 +21,7 @@ import com.hereliesaz.qrlockscreen.data.QrConfig
 import com.hereliesaz.qrlockscreen.data.QrDataStore
 import com.hereliesaz.qrlockscreen.data.QrShape
 import com.hereliesaz.qrlockscreen.ui.theme.QrLockscreenTheme
-import com.hereliesaz.qrlockscreen.widget.QrWidget
+import com.hereliesaz.qrLockscreen.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -143,7 +143,13 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                 onClick = {
                     scope.launch {
                         dataStore.saveConfig(appWidgetId, config!!)
-                        QrWidget().updateAll(context)
+                        // Send an update broadcast to the specific widget
+                        val intent = Intent(context, QrWidgetReceiver::class.java).apply {
+                            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
+                        }
+                        context.sendBroadcast(intent)
+
                         onConfigComplete()
                     }
                 },

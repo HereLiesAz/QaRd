@@ -30,9 +30,11 @@ object QrGenerator {
 
             val renderedBytes = finalBuilder.render()
             val nativeImage = renderedBytes.nativeImage() as android.graphics.Bitmap
-            val stream = java.io.ByteArrayOutputStream()
-            nativeImage.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            val byteArray = stream.toByteArray()
+            val byteArray = java.io.ByteArrayOutputStream().use { stream ->
+                // The quality parameter is ignored for PNG, but it's a required parameter.
+                nativeImage.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                stream.toByteArray()
+            }
             BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
         } catch (e: Exception) {
             e.printStackTrace()
