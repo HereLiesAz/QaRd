@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import com.hereliesaz.qrlockscreen.data.QrConfig
 import com.hereliesaz.qrlockscreen.data.QrDataStore
 import com.hereliesaz.qrlockscreen.data.QrShape
@@ -142,8 +143,7 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                 onClick = {
                     scope.launch {
                         dataStore.saveConfig(appWidgetId, config!!)
-                        GlanceAppWidgetManager(context).updateAppWidgetState(appWidgetId, config!!)
-                        QrWidget().update(context, appWidgetId)
+                        QrWidget().updateAll(context)
                         onConfigComplete()
                     }
                 },
