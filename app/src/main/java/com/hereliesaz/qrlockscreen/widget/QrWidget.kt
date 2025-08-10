@@ -1,7 +1,10 @@
-package com.hereliesaz.qrLockscreen.widget
+package com.hereliesaz.qrlockscreen.widget
 
 import android.content.Context
+import android.graphics.Bitmap
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
+import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
@@ -12,23 +15,20 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
-import androidx.glance.unit.dp
-import com.hereliesaz.qrLockscreen.data.QrDataStore
+import com.hereliesaz.qrlockscreen.data.QrDataStore
 import kotlinx.coroutines.flow.first
-import androidx.compose.ui.graphics.Color as GlanceColor
 
 class QrWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val dataStore = QrDataStore(context)
-        val appWidgetId = id.toString().filter { it.isDigit() }.toInt()
-        val config = dataStore.getConfig(appWidgetId).first()
+        val config = dataStore.getConfig(getAppWidgetId(id)).first()
 
         provideContent {
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(GlanceColor.White) // This can be transparent
+                    .background(ImageProvider(createTransparentBitmap())) // Use transparent background
                     .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -50,5 +50,16 @@ class QrWidget : GlanceAppWidget() {
                 }
             }
         }
+    }
+
+    private fun getAppWidgetId(glanceId: GlanceId): Int {
+        // This is a temporary and fragile way to get the appWidgetId
+        return glanceId.toString().filter { it.isDigit() }.toIntOrNull() ?: -1
+    }
+
+    private fun createTransparentBitmap(): Bitmap {
+        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(0)
+        return bitmap
     }
 }

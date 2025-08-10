@@ -1,4 +1,4 @@
-package com.hereliesaz.qrLockscreen.data
+package com.hereliesaz.qrlockscreen.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -20,7 +20,11 @@ class QrDataStore(context: Context) {
     fun getConfig(appWidgetId: Int): Flow<QrConfig> {
         return dataStore.data.map { preferences ->
             preferences[configKey(appWidgetId)]?.let { jsonString ->
-                Json.decodeFromString<QrConfig>(jsonString)
+                try {
+                    Json.decodeFromString<QrConfig>(jsonString)
+                } catch (e: Exception) {
+                    QrConfig() // Return default on deserialization error
+                }
             } ?: QrConfig() // Return default config if nothing is stored
         }
     }

@@ -14,7 +14,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".ui.ConfigActivity"
+            android:name="com.hereliesaz.qrlockscreen.ui.ConfigActivity"
             android:exported="true"
             android:theme="@style/Theme.QrLockscreen">
             <intent-filter>
