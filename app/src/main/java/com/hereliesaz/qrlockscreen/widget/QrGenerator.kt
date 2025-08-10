@@ -16,18 +16,24 @@ object QrGenerator {
         if (config.data.isBlank()) return null
 
         return try {
-            val qrCodeBuilder = QRCode(config.data)
-                .withColor(Colors.css(config.foregroundColor))
-                .withBackgroundColor(Colors.css(config.backgroundColor))
-
-            val finalBuilder = when (config.shape) {
-                QrShape.Circle -> qrCodeBuilder.withShape(CircleShapeFunction())
-                QrShape.RoundSquare -> qrCodeBuilder.withShape(RoundSquaresShapeFunction(0.5)) // You can adjust the radius
-                QrShape.Square -> qrCodeBuilder.withShape(DefaultShapeFunction())
+            val qrCodeBuilder = when (config.shape) {
+                QrShape.Circle -> QRCode.ofCircles()
+                QrShape.RoundSquare -> QRCode.ofRoundedSquares()
+                QrShape.Square -> QRCode.ofSquares()
             }
 
-            val renderedBytes = finalBuilder.renderToBytes()
-            BitmapFactory.decodeByteArray(renderedBytes, 0, renderedBytes.size)
+            val finalBuilder = qrCodeBuilder
+                .withColor(Colors.css(config.foregroundColor))
+                .withBackgroundColor(Colors.css(config.backgroundColor))
+                .build(config.data)
+
+
+            val renderedBytes = finalBuilder.render()
+            val nativeImage = renderedBytes.nativeImage() as android.graphics.Bitmap
+            val stream = java.io.ByteArrayOutputStream()
+            nativeImage.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            val byteArray = stream.toByteArray()
+            BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
         } catch (e: Exception) {
             e.printStackTrace()
             null
