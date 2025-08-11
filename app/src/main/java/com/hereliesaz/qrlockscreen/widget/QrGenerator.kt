@@ -16,9 +16,9 @@ object QrGenerator {
 
     fun generate(config: QrConfig): Bitmap? {
         val dataString = when (config.data) {
-            is QrData.Links -> config.data.links.joinToString("\n")
+            is QrData.Links -> config.data.links.filter { it.isNotBlank() }.joinToString("\n")
             is QrData.Contact -> createVCard(config.data)
-            is QrData.SocialMedia -> config.data.links.joinToString("\n") { "${it.platform}: ${it.url}" }
+            is QrData.SocialMedia -> config.data.links.filter { it.url.isNotBlank() }.joinToString("\n") { "${it.platform}: ${it.url}" }
         }
 
         if (dataString.isBlank()) return null
@@ -45,7 +45,7 @@ object QrGenerator {
     }
 
     private fun createVCard(contact: QrData.Contact): String {
-        val socialLinks = contact.socialLinks.joinToString("\n") {
+        val socialLinks = contact.socialLinks.filter { it.url.isNotBlank() }.joinToString("\n") {
             "X-SOCIALPROFILE;type=${it.platform}:${it.url}"
         }
         return """
@@ -57,7 +57,6 @@ object QrGenerator {
             URL:${contact.website}
             EMAIL:${contact.email}
             $socialLinks
-
             END:VCARD
         """.trimIndent()
     }

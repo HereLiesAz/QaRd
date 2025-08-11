@@ -2,6 +2,12 @@ package com.hereliesaz.qrlockscreen.data
 
 import kotlinx.serialization.Serializable
 
+enum class QrDataType {
+    Links,
+    Contact,
+    SocialMedia
+}
+
 @Serializable
 sealed class QrData {
     @Serializable
@@ -15,7 +21,6 @@ sealed class QrData {
         val organization: String = "",
         val website: String = "",
         val socialLinks: List<SocialLink> = emptyList()
-
     ) : QrData()
 
     @Serializable

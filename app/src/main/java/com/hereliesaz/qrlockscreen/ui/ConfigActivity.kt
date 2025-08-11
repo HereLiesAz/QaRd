@@ -98,14 +98,24 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
         ) {
             Text("Configure QR Code", style = MaterialTheme.typography.headlineSmall)
 
+            var selectedDataType by remember {
+                mutableStateOf(
+                    when (config!!.data) {
+                        is QrData.Links -> QrDataType.Links
+                        is QrData.Contact -> QrDataType.Contact
+                        is QrData.SocialMedia -> QrDataType.SocialMedia
+                    }
+                )
+            }
+
             DataTypeSelector(
-                selectedType = config!!.data::class,
+                selectedType = selectedDataType,
                 onTypeSelected = { newType ->
+                    selectedDataType = newType
                     val newData = when (newType) {
-                        QrData.Links::class -> QrData.Links()
-                        QrData.Contact::class -> QrData.Contact()
-                        QrData.SocialMedia::class -> QrData.SocialMedia()
-                        else -> QrData.Links()
+                        QrDataType.Links -> QrData.Links()
+                        QrDataType.Contact -> QrData.Contact()
+                        QrDataType.SocialMedia -> QrData.SocialMedia()
                     }
                     config = config!!.copy(data = newData)
                 }
@@ -194,7 +204,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 enabled = when (val data = config!!.data) {
                     is QrData.Links -> data.links.any { it.isNotBlank() }
                     is QrData.Contact -> data.name.isNotBlank()
-                    is QrData.SocialMedia -> data.links.isNotEmpty()
+                    is QrData.SocialMedia -> data.links.any { it.url.isNotBlank() }
                 }
             ) {
                 Text("Create Widget")
@@ -233,11 +243,11 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataTypeSelector(
-    selectedType: kotlin.reflect.KClass<out QrData>,
-    onTypeSelected: (kotlin.reflect.KClass<out QrData>) -> Unit
+    selectedType: QrDataType,
+    onTypeSelected: (QrDataType) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val items = listOf(QrData.Links::class, QrData.Contact::class, QrData.SocialMedia::class)
+    val items = QrDataType.values()
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -245,7 +255,7 @@ fun DataTypeSelector(
     ) {
         OutlinedTextField(
             readOnly = true,
-            value = selectedType.simpleName ?: "",
+            value = selectedType.name,
             onValueChange = {},
             label = { Text("Data Type") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -259,7 +269,7 @@ fun DataTypeSelector(
         ) {
             items.forEach { selectionOption ->
                 DropdownMenuItem(
-                    text = { Text(selectionOption.simpleName ?: "") },
+                    text = { Text(selectionOption.name) },
                     onClick = {
                         onTypeSelected(selectionOption)
                         expanded = false
@@ -307,126 +317,106 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
         Spacer(modifier = Modifier.height(8.dp))
         Text("Social Media Links", style = MaterialTheme.typography.titleMedium)
 
-        contact.socialLinks.forEachIndexed { index, link ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = link.platform,
-                    onValueChange = { newPlatform ->
-                        val newLinks = contact.socialLinks.toMutableList()
-                        newLinks[index] = newLinks[index].copy(platform = newPlatform)
-                        onContactChange(contact.copy(socialLinks = newLinks))
-                    },
-                    label = { Text("Platform") },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = link.url,
-                    onValueChange = { newUrl ->
-                        val newLinks = contact.socialLinks.toMutableList()
-                        newLinks[index] = newLinks[index].copy(url = newUrl)
-                        onContactChange(contact.copy(socialLinks = newLinks))
-                    },
-                    label = { Text("URL") },
-                    modifier = Modifier.weight(2f)
-                )
-                IconButton(onClick = {
-                    val newLinks = contact.socialLinks.toMutableList()
-                    newLinks.removeAt(index)
-                    onContactChange(contact.copy(socialLinks = newLinks))
-                }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+        EditableList(
+            items = contact.socialLinks,
+            onAdd = { onContactChange(contact.copy(socialLinks = contact.socialLinks + SocialLink("", ""))) },
+            onRemove = { index -> onContactChange(contact.copy(socialLinks = contact.socialLinks.filterIndexed { i, _ -> i != index })) },
+            itemContent = { index, item ->
+                Row {
+                    OutlinedTextField(
+                        value = item.platform,
+                        onValueChange = { newItem ->
+                            onContactChange(contact.copy(socialLinks = contact.socialLinks.toMutableList().apply { set(index, item.copy(platform = newItem)) }))
+                        },
+                        label = { Text("Platform") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = item.url,
+                        onValueChange = { newItem ->
+                            onContactChange(contact.copy(socialLinks = contact.socialLinks.toMutableList().apply { set(index, item.copy(url = newItem)) }))
+                        },
+                        label = { Text("URL") },
+                        modifier = Modifier.weight(2f)
+                    )
                 }
             }
-        }
-        Button(onClick = {
-            val newLinks = contact.socialLinks.toMutableList()
-            newLinks.add(SocialLink("", ""))
-            onContactChange(contact.copy(socialLinks = newLinks))
-        }) {
-            Text("Add Social Link")
-        }
-
+        )
     }
 }
 
 @Composable
 fun LinksForm(links: QrData.Links, onLinksChange: (QrData.Links) -> Unit) {
+    EditableList(
+        items = links.links,
+        onAdd = { onLinksChange(links.copy(links = links.links + "")) },
+        onRemove = { index -> onLinksChange(links.copy(links = links.links.filterIndexed { i, _ -> i != index })) },
+        itemContent = { index, item ->
+            OutlinedTextField(
+                value = item,
+                onValueChange = { newItem ->
+                    onLinksChange(links.copy(links = links.links.toMutableList().apply { set(index, newItem) }))
+                },
+                label = { Text("Link to File") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    )
+}
+
+@Composable
+fun <T> EditableList(
+    items: List<T>,
+    onAdd: () -> Unit,
+    onRemove: (Int) -> Unit,
+    itemContent: @Composable (Int, T) -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        links.links.forEachIndexed { index, link ->
+        items.forEachIndexed { index, item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = link,
-                    onValueChange = { newLink ->
-                        val newLinks = links.links.toMutableList()
-                        newLinks[index] = newLink
-                        onLinksChange(links.copy(links = newLinks))
-                    },
-                    label = { Text("Link to File") },
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = {
-                    val newLinks = links.links.toMutableList()
-                    newLinks.removeAt(index)
-                    onLinksChange(links.copy(links = newLinks))
-                }) {
+                Box(modifier = Modifier.weight(1f)) {
+                    itemContent(index, item)
+                }
+                IconButton(onClick = { onRemove(index) }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete")
                 }
             }
         }
-        Button(onClick = {
-            val newLinks = links.links.toMutableList()
-            newLinks.add("")
-            onLinksChange(links.copy(links = newLinks))
-        }) {
-            Text("Add Link")
+        Button(onClick = onAdd) {
+            Text("Add")
         }
     }
 }
 
 @Composable
 fun SocialMediaForm(socialMedia: QrData.SocialMedia, onSocialMediaChange: (QrData.SocialMedia) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        socialMedia.links.forEachIndexed { index, link ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    EditableList(
+        items = socialMedia.links,
+        onAdd = { onSocialMediaChange(socialMedia.copy(links = socialMedia.links + SocialLink("", ""))) },
+        onRemove = { index -> onSocialMediaChange(socialMedia.copy(links = socialMedia.links.filterIndexed { i, _ -> i != index })) },
+        itemContent = { index, item ->
+            Row {
                 OutlinedTextField(
-                    value = link.platform,
-                    onValueChange = { newPlatform ->
-                        val newLinks = socialMedia.links.toMutableList()
-                        newLinks[index] = newLinks[index].copy(platform = newPlatform)
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
+                    value = item.platform,
+                    onValueChange = { newItem ->
+                        onSocialMediaChange(socialMedia.copy(links = socialMedia.links.toMutableList().apply { set(index, item.copy(platform = newItem)) }))
                     },
                     label = { Text("Platform") },
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 OutlinedTextField(
-                    value = link.url,
-                    onValueChange = { newUrl ->
-                        val newLinks = socialMedia.links.toMutableList()
-                        newLinks[index] = newLinks[index].copy(url = newUrl)
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
+                    value = item.url,
+                    onValueChange = { newItem ->
+                        onSocialMediaChange(socialMedia.copy(links = socialMedia.links.toMutableList().apply { set(index, item.copy(url = newItem)) }))
                     },
                     label = { Text("URL") },
                     modifier = Modifier.weight(2f)
                 )
-                IconButton(onClick = {
-                    val newLinks = socialMedia.links.toMutableList()
-                    newLinks.removeAt(index)
-                    onSocialMediaChange(socialMedia.copy(links = newLinks))
-                }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete")
-                }
             }
         }
-        Button(onClick = {
-            val newLinks = socialMedia.links.toMutableList()
-            newLinks.add(SocialLink("", ""))
-            onSocialMediaChange(socialMedia.copy(links = newLinks))
-        }) {
-            Text("Add Link")
-        }
-    }
+    )
 }
 
 @Composable

@@ -7,6 +7,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 private val Context.dataStore by preferencesDataStore(name = "qr_settings")
 
@@ -21,7 +24,15 @@ class QrDataStore(context: Context) {
         return dataStore.data.map { preferences ->
             preferences[configKey(appWidgetId)]?.let { jsonString ->
                 try {
-                    Json.decodeFromString<QrConfig>(jsonString)
+                    val jsonObject = Json.parseToJsonElement(jsonString) as JsonObject
+                    val data = jsonObject["data"]
+                    if (data is JsonPrimitive) {
+                        // Old format, data is a string
+                        QrConfig(data = QrData.Links(listOf(data.content)))
+                    } else {
+                        // New format
+                        Json.decodeFromJsonElement(QrConfig.serializer(), jsonObject)
+                    }
                 } catch (e: Exception) {
                     QrConfig() // Return default on deserialization error
                 }
