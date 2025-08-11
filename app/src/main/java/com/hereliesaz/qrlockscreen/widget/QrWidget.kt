@@ -1,5 +1,7 @@
 package com.hereliesaz.qrlockscreen.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.ui.unit.dp
@@ -8,6 +10,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -16,13 +19,15 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qrlockscreen.data.QrDataStore
+import com.hereliesaz.qrlockscreen.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
 
 class QrWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val dataStore = QrDataStore(context)
-        val config = dataStore.getConfig(getAppWidgetId(id)).first()
+        val appWidgetId = getAppWidgetId(context, id)
+        val config = dataStore.getConfig(appWidgetId).first()
 
         provideContent {
             Box(
@@ -52,9 +57,18 @@ class QrWidget : GlanceAppWidget() {
         }
     }
 
-    private fun getAppWidgetId(glanceId: GlanceId): Int {
-        // This is a temporary and fragile way to get the appWidgetId
-        return glanceId.toString().filter { it.isDigit() }.toIntOrNull() ?: -1
+    private suspend fun getAppWidgetId(context: Context, glanceId: GlanceId): Int {
+        val glanceManager = GlanceAppWidgetManager(context)
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val componentName = ComponentName(context, QrWidgetReceiver::class.java)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+
+        for (appWidgetId in appWidgetIds) {
+            if (glanceManager.getGlanceIdBy(appWidgetId) == glanceId) {
+                return appWidgetId
+            }
+        }
+        return AppWidgetManager.INVALID_APPWIDGET_ID
     }
 
     private fun createTransparentBitmap(): Bitmap {

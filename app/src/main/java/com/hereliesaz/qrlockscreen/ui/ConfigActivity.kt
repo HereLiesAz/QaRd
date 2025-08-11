@@ -1,4 +1,4 @@
-package com.hereliesaz.qrLockscreen.ui
+package com.hereliesaz.qrlockscreen.ui
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
@@ -16,18 +16,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAll
 import com.hereliesaz.qrlockscreen.data.QrConfig
 import com.hereliesaz.qrlockscreen.data.QrDataStore
 import com.hereliesaz.qrlockscreen.data.QrShape
 import com.hereliesaz.qrlockscreen.ui.theme.QrLockscreenTheme
-import com.hereliesaz.qrLockscreen.widget.QrWidgetReceiver
+import com.hereliesaz.qrlockscreen.widget.QrWidget
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+    private val qrWidget = QrWidget()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +46,7 @@ class ConfigActivity : ComponentActivity() {
 
         setContent {
             QrLockscreenTheme {
-                ConfigScreen(appWidgetId = appWidgetId) {
+                ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) {
                     // This lambda is called when configuration is complete
                     val resultValue =
                         Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -59,7 +60,7 @@ class ConfigActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
+fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dataStore = remember { QrDataStore(context) }
@@ -143,13 +144,9 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                 onClick = {
                     scope.launch {
                         dataStore.saveConfig(appWidgetId, config!!)
-                        // Send an update broadcast to the specific widget
-                        val intent = Intent(context, QrWidgetReceiver::class.java).apply {
-                            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
-                        }
-                        context.sendBroadcast(intent)
-
+                        val glanceId =
+                            GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+                        qrWidget.update(context, glanceId)
                         onConfigComplete()
                     }
                 },
