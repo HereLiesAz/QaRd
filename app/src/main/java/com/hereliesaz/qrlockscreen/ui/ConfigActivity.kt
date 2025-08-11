@@ -95,7 +95,11 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
         return
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+    ) {
         AnimatedVisibility(
             visible = config != null,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)) + slideInVertically(
@@ -113,123 +117,141 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Configure QR Code", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    "Configure QR Code",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
                 var selectedDataType by remember {
-                mutableStateOf(
-                    when (config!!.data) {
-                        is QrData.Links -> QrDataType.Links
-                        is QrData.Contact -> QrDataType.Contact
-                        is QrData.SocialMedia -> QrDataType.SocialMedia
-                    }
-                )
-            }
-
-            DataTypeSelector(
-                selectedType = selectedDataType,
-                onTypeSelected = { newType ->
-                    selectedDataType = newType
-                    val newData = when (newType) {
-                        QrDataType.Links -> QrData.Links()
-                        QrDataType.Contact -> QrData.Contact()
-                        QrDataType.SocialMedia -> QrData.SocialMedia()
-                    }
-                    config = config!!.copy(data = newData)
-                }
-            )
-
-            when (val data = config!!.data) {
-                is QrData.Links -> {
-                    LinksForm(
-                        links = data,
-                        onLinksChange = { newLinks ->
-                            config = config!!.copy(data = newLinks)
+                    mutableStateOf(
+                        when (config!!.data) {
+                            is QrData.Links -> QrDataType.Links
+                            is QrData.Contact -> QrDataType.Contact
+                            is QrData.SocialMedia -> QrDataType.SocialMedia
                         }
                     )
                 }
-                is QrData.Contact -> {
-                    ContactForm(
-                        contact = data,
-                        onContactChange = { newContact ->
-                            config = config!!.copy(data = newContact)
-                        }
-                    )
-                }
-                is QrData.SocialMedia -> {
-                    SocialMediaForm(
-                        socialMedia = data,
-                        onSocialMediaChange = { newSocialMedia ->
-                            config = config!!.copy(data = newSocialMedia)
-                        }
-                    )
-                }
-            }
 
-            var shapeExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = shapeExpanded,
-                onExpandedChange = { shapeExpanded = !shapeExpanded }
-            ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = config!!.shape.name,
-                    onValueChange = {},
-                    label = { Text("Shape") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shapeExpanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = shapeExpanded,
-                    onDismissRequest = { shapeExpanded = false }
-                ) {
-                    QrShape.values().forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption.name) },
-                            onClick = {
-                                config = config!!.copy(shape = selectionOption)
-                                shapeExpanded = false
+                // Data Section
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("Data", style = MaterialTheme.typography.titleLarge)
+                        DataTypeSelector(
+                            selectedType = selectedDataType,
+                            onTypeSelected = { newType ->
+                                selectedDataType = newType
+                                val newData = when (newType) {
+                                    QrDataType.Links -> QrData.Links()
+                                    QrDataType.Contact -> QrData.Contact()
+                                    QrDataType.SocialMedia -> QrData.SocialMedia()
+                                }
+                                config = config!!.copy(data = newData)
                             }
+                        )
+
+                        when (val data = config!!.data) {
+                            is QrData.Links -> LinksForm(links = data) { newLinks ->
+                                config = config!!.copy(data = newLinks)
+                            }
+                            is QrData.Contact -> ContactForm(contact = data) { newContact ->
+                                config = config!!.copy(data = newContact)
+                            }
+                            is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
+                                config = config!!.copy(data = newSocialMedia)
+                            }
+                        }
+                    }
+                }
+
+                // Appearance Section
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("Appearance", style = MaterialTheme.typography.titleLarge)
+
+                        var shapeExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = shapeExpanded,
+                            onExpandedChange = { shapeExpanded = !shapeExpanded }
+                        ) {
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = config!!.shape.name,
+                                onValueChange = {},
+                                label = { Text("Shape") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shapeExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = shapeExpanded,
+                                onDismissRequest = { shapeExpanded = false }
+                            ) {
+                                QrShape.values().forEach { selectionOption ->
+                                    DropdownMenuItem(
+                                        text = { Text(selectionOption.name) },
+                                        onClick = {
+                                            config = config!!.copy(shape = selectionOption)
+                                            shapeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        ColorPickerField(
+                            label = "Foreground Color",
+                            color = config!!.foregroundColor,
+                            onClick = { showForegroundColorPicker = true }
+                        )
+
+                        ColorPickerField(
+                            label = "Background Color",
+                            color = config!!.backgroundColor,
+                            onClick = { showBackgroundColorPicker = true }
                         )
                     }
                 }
-            }
 
-            ColorPickerField(
-                label = "Foreground Color",
-                color = config!!.foregroundColor,
-                onClick = { showForegroundColorPicker = true }
-            )
-
-            ColorPickerField(
-                label = "Background Color",
-                color = config!!.backgroundColor,
-                onClick = { showBackgroundColorPicker = true }
-            )
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        dataStore.saveConfig(appWidgetId, config!!)
-                        val glanceId =
-                            GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                        qrWidget.update(context, glanceId)
-                        onConfigComplete()
+                // Preview Section
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QrCodePreview(config = config!!)
                     }
-                },
-                enabled = when (val data = config!!.data) {
-                    is QrData.Links -> data.links.any { it.isNotBlank() }
-                    is QrData.Contact -> data.name.isNotBlank()
-                    is QrData.SocialMedia -> data.links.any { it.url.isNotBlank() }
                 }
-            ) {
-                Text("Create Widget")
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            QrCodePreview(config = config!!)
+                Button(
+                    onClick = {
+                        scope.launch {
+                            dataStore.saveConfig(appWidgetId, config!!)
+                            val glanceId =
+                                GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+                            qrWidget.update(context, glanceId)
+                            onConfigComplete()
+                        }
+                    },
+                    enabled = when (val data = config!!.data) {
+                        is QrData.Links -> data.links.any { it.isNotBlank() }
+                        is QrData.Contact -> data.name.isNotBlank()
+                        is QrData.SocialMedia -> data.links.any { it.url.isNotBlank() }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Create Widget")
+                }
         }
         }
     }
