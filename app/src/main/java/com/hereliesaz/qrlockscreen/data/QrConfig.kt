@@ -15,6 +15,7 @@ sealed class QrData {
         val organization: String = "",
         val website: String = "",
         val socialLinks: List<SocialLink> = emptyList()
+
     ) : QrData()
 
     @Serializable

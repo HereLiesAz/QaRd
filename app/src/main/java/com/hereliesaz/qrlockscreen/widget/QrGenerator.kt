@@ -57,6 +57,7 @@ object QrGenerator {
             URL:${contact.website}
             EMAIL:${contact.email}
             $socialLinks
+
             END:VCARD
         """.trimIndent()
     }

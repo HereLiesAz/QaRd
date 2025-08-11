@@ -346,6 +346,7 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
         }) {
             Text("Add Social Link")
         }
+
     }
 }
 
