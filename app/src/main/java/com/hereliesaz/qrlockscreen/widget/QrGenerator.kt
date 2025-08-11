@@ -14,10 +14,10 @@ import kotlin.math.sin
 object QrGenerator {
 
     fun generate(config: QrConfig): Bitmap? {
-        val dataString = when (config.data) {
-            is QrData.Links -> config.data.links.filter { it.isNotBlank() }.joinToString("\n")
-            is QrData.Contact -> createVCard(config.data)
-            is QrData.SocialMedia -> config.data.links.filter { it.url.isNotBlank() }.joinToString("\n") { "${it.platform}: ${it.url}" }
+        val dataString = when (val data = config.data) {
+            is QrData.Links -> data.links.filter { it.isNotBlank() }.joinToString("\n")
+            is QrData.Contact -> createVCard(data)
+            is QrData.SocialMedia -> data.links.filter { it.url.isNotBlank() }.joinToString("\n") { "${it.platform}: ${it.url}" }
         }
 
         if (dataString.isBlank()) return null
@@ -28,6 +28,7 @@ object QrGenerator {
                 QrShape.RoundSquare -> QRCode.ofRoundedSquares()
                 QrShape.Square -> QRCode.ofSquares()
                 QrShape.Diamond -> QRCode.ofCustomShape(DiamondShapeFunction())
+                else -> QRCode.ofSquares()
             }
 
             val qrCodeBuilderWithColor = when (config.foregroundType) {
@@ -36,6 +37,7 @@ object QrGenerator {
                     config.foregroundGradientColors[0],
                     config.foregroundGradientColors[1]
                 )
+                else -> qrCodeBuilder.withColor(config.foregroundColor)
             }
 
             val qrCode = qrCodeBuilderWithColor

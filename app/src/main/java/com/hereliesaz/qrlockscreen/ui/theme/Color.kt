@@ -1,4 +1,4 @@
-package com.hereliesaz.qard.ui.theme
+package com.hereliesaz.qrlockscreen.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

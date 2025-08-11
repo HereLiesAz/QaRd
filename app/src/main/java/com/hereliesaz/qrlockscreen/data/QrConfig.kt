@@ -1,4 +1,4 @@
-package com.hereliesaz.qard.data
+package com.hereliesaz.qrlockscreen.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
