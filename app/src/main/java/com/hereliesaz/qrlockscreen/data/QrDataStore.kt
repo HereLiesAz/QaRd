@@ -1,4 +1,4 @@
-package com.hereliesaz.qard.data
+package com.hereliesaz.qrlockscreen.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
