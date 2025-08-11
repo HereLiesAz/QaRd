@@ -15,8 +15,13 @@
 
         <activity
             android:name=".ui.LockscreenActivity"
-            android:exported="false"
-            android:theme="@style/Theme.QrLockscreen" />
+            android:exported="true"
+            android:theme="@style/Theme.QrLockscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.ConfigActivity"

@@ -81,6 +81,9 @@ dependencies {
     // Color Picker
     implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
 
+    // Material Kolor for palette generation
+    implementation("com.materialkolor:material-kolor:3.0.0")
+
 
     // Testing
     testImplementation(libs.junit)

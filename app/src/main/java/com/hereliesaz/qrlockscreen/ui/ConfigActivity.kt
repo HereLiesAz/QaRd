@@ -9,35 +9,40 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
 import com.hereliesaz.qrlockscreen.data.*
+import com.hereliesaz.qrlockscreen.data.BackgroundType
+import com.hereliesaz.qrlockscreen.data.ForegroundType
 import com.hereliesaz.qrlockscreen.ui.theme.QrLockscreenTheme
 import com.hereliesaz.qrlockscreen.widget.QrGenerator
 import com.hereliesaz.qrlockscreen.widget.QrWidget
+import com.materialkolor.DynamicMaterialTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class ConfigActivity : ComponentActivity() {
 
@@ -73,6 +78,32 @@ class ConfigActivity : ComponentActivity() {
     }
 }
 
+private fun generateRandomPresets(): List<QrConfig> {
+    return (1..20).map {
+        val randomSeed = Color(
+            red = Random.nextFloat(),
+            green = Random.nextFloat(),
+            blue = Random.nextFloat(),
+            alpha = 1f
+        )
+        val colorScheme = DynamicMaterialTheme(seedColor = randomSeed).colorScheme
+        val shape = QrShape.values().random()
+        val fgType = ForegroundType.values().random()
+        val bgType = BackgroundType.values().random()
+
+        QrConfig(
+            shape = shape,
+            foregroundType = fgType,
+            foregroundColor = colorScheme.primary.toArgb(),
+            foregroundGradientColors = listOf(colorScheme.primary.toArgb(), colorScheme.tertiary.toArgb()),
+            backgroundType = bgType,
+            backgroundColor = colorScheme.surface.toArgb(),
+            backgroundGradientColors = listOf(colorScheme.surface.toArgb(), colorScheme.surfaceVariant.toArgb()),
+            backgroundGradientAngle = Random.nextFloat() * 360
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> Unit) {
@@ -83,9 +114,19 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
     var config by remember { mutableStateOf<QrConfig?>(null) }
     var showForegroundColorPicker by remember { mutableStateOf(false) }
     var showBackgroundColorPicker by remember { mutableStateOf(false) }
+    var showGradientColorPicker1 by remember { mutableStateOf(false) }
+    var showGradientColorPicker2 by remember { mutableStateOf(false) }
+    var showFgGradientColorPicker1 by remember { mutableStateOf(false) }
+    var showFgGradientColorPicker2 by remember { mutableStateOf(false) }
+
+    val sheetState = rememberModalBottomSheetState()
+    var isSheetOpen by remember { mutableStateOf(false) }
+
+    var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
 
     LaunchedEffect(key1 = appWidgetId) {
         config = dataStore.getConfig(appWidgetId).first()
+        presets = generateRandomPresets()
     }
 
     if (config == null) {
@@ -100,144 +141,244 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
         return
     }
 
+    if (isSheetOpen) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = { isSheetOpen = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QrCodePreview(config = config!!)
+            }
+        }
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        AnimatedVisibility(
-            visible = config != null,
-            enter = fadeIn(animationSpec = tween(durationMillis = 300)) + slideInVertically(
-                initialOffsetY = { it / 10 },
-                animationSpec = tween(durationMillis = 300)
-            ),
-            exit = fadeOut(animationSpec = tween(durationMillis = 150)) + slideOutVertically(
-                targetOffsetY = { it / 10 },
-                animationSpec = tween(durationMillis = 150)
-            )
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    "Configure QR Code",
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+            Image(
+                painter = painterResource(id = com.hereliesaz.qrlockscreen.R.mipmap.ic_launcher_round),
+                contentDescription = "App Icon",
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Configure QR Code",
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
-                var selectedDataType by remember {
-                    mutableStateOf(
-                        when (config!!.data) {
-                            is QrData.Links -> QrDataType.Links
-                            is QrData.Contact -> QrDataType.Contact
-                            is QrData.SocialMedia -> QrDataType.SocialMedia
+            var selectedDataType by remember {
+                mutableStateOf(
+                    when (config!!.data) {
+                        is QrData.Links -> QrDataType.Links
+                        is QrData.Contact -> QrDataType.Contact
+                        is QrData.SocialMedia -> QrDataType.SocialMedia
+                    }
+                )
+            }
+
+            // Data Section
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Data", style = MaterialTheme.typography.headlineMedium)
+                    DataTypeSelector(
+                        selectedType = selectedDataType,
+                        onTypeSelected = { newType ->
+                            selectedDataType = newType
+                            val newData = when (newType) {
+                                QrDataType.Links -> QrData.Links()
+                                QrDataType.Contact -> QrData.Contact()
+                                QrDataType.SocialMedia -> QrData.SocialMedia()
+                            }
+                            config = config!!.copy(data = newData)
                         }
                     )
-                }
 
-                // Data Section
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text("Data", style = MaterialTheme.typography.titleLarge)
-                        DataTypeSelector(
-                            selectedType = selectedDataType,
-                            onTypeSelected = { newType ->
-                                selectedDataType = newType
-                                val newData = when (newType) {
-                                    QrDataType.Links -> QrData.Links()
-                                    QrDataType.Contact -> QrData.Contact()
-                                    QrDataType.SocialMedia -> QrData.SocialMedia()
-                                }
-                                config = config!!.copy(data = newData)
-                            }
-                        )
-
-                        when (val data = config!!.data) {
-                            is QrData.Links -> LinksForm(links = data) { newLinks ->
-                                config = config!!.copy(data = newLinks)
-                            }
-                            is QrData.Contact -> ContactForm(contact = data) { newContact ->
-                                config = config!!.copy(data = newContact)
-                            }
-                            is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
-                                config = config!!.copy(data = newSocialMedia)
-                            }
+                    when (val data = config!!.data) {
+                        is QrData.Links -> LinksForm(links = data) { newLinks ->
+                            config = config!!.copy(data = newLinks)
+                        }
+                        is QrData.Contact -> ContactForm(contact = data) { newContact ->
+                            config = config!!.copy(data = newContact)
+                        }
+                        is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
+                            config = config!!.copy(data = newSocialMedia)
                         }
                     }
                 }
+            }
 
-                // Appearance Section
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text("Appearance", style = MaterialTheme.typography.titleLarge)
+            // Appearance Section
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Appearance", style = MaterialTheme.typography.headlineMedium)
 
-                        var shapeExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = shapeExpanded,
-                            onExpandedChange = { shapeExpanded = !shapeExpanded }
-                        ) {
-                            OutlinedTextField(
-                                readOnly = true,
-                                value = config!!.shape.name,
-                                onValueChange = {},
-                                label = { Text("Shape") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = shapeExpanded) },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = shapeExpanded,
-                                onDismissRequest = { shapeExpanded = false }
+                    Text("Background Type", style = MaterialTheme.typography.bodyLarge)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        BackgroundType.values().forEachIndexed { index, backgroundType ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
+                                onClick = { config = config!!.copy(backgroundType = backgroundType) },
+                                selected = config!!.backgroundType == backgroundType
                             ) {
-                                QrShape.values().forEach { selectionOption ->
-                                    DropdownMenuItem(
-                                        text = { Text(selectionOption.name) },
-                                        onClick = {
-                                            config = config!!.copy(shape = selectionOption)
-                                            shapeExpanded = false
-                                        }
+                                Text(backgroundType.name)
+                            }
+                        }
+                    }
+
+                    Text("Shape", style = MaterialTheme.typography.bodyLarge)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(QrShape.values()) { shape ->
+                            val isSelected = config!!.shape == shape
+                            Card(
+                                onClick = { config = config!!.copy(shape = shape) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = when (shape) {
+                                            QrShape.Square -> Icons.Default.CropSquare
+                                            QrShape.Circle -> Icons.Default.Circle
+                                            QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
+                                            QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
+                                        },
+                                        contentDescription = shape.name,
+                                        modifier = Modifier.size(48.dp)
                                     )
+                                    Text(shape.name, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
+                    }
 
-                        ColorPickerField(
-                            label = "Foreground Color",
-                            color = config!!.foregroundColor,
-                            onClick = { showForegroundColorPicker = true }
-                        )
+                    Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        ForegroundType.values().forEachIndexed { index, foregroundType ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
+                                onClick = { config = config!!.copy(foregroundType = foregroundType) },
+                                selected = config!!.foregroundType == foregroundType
+                            ) {
+                                Text(foregroundType.name)
+                            }
+                        }
+                    }
 
-                        ColorPickerField(
-                            label = "Background Color",
-                            color = config!!.backgroundColor,
-                            onClick = { showBackgroundColorPicker = true }
-                        )
+                    when (config!!.foregroundType) {
+                        ForegroundType.SOLID -> {
+                            ColorPickerField(
+                                label = "Foreground Color",
+                                color = config!!.foregroundColor,
+                                onClick = { showForegroundColorPicker = true }
+                            )
+                        }
+                        ForegroundType.GRADIENT -> {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ColorPickerField(
+                                    label = "Foreground Gradient Color 1",
+                                    color = config!!.foregroundGradientColors.getOrElse(0) { 0xFF000000.toInt() },
+                                    onClick = { showFgGradientColorPicker1 = true }
+                                )
+                                ColorPickerField(
+                                    label = "Foreground Gradient Color 2",
+                                    color = config!!.foregroundGradientColors.getOrElse(1) { 0xFF0000FF.toInt() },
+                                    onClick = { showFgGradientColorPicker2 = true }
+                                )
+                            }
+                        }
+                    }
+
+                    when (config!!.backgroundType) {
+                        BackgroundType.SOLID -> {
+                            ColorPickerField(
+                                label = "Background Color",
+                                color = config!!.backgroundColor,
+                                onClick = { showBackgroundColorPicker = true }
+                            )
+                        }
+                        BackgroundType.GRADIENT -> {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ColorPickerField(
+                                    label = "Gradient Color 1",
+                                    color = config!!.backgroundGradientColors.getOrElse(0) { 0xFFFFFFFF.toInt() },
+                                    onClick = { showGradientColorPicker1 = true }
+                                )
+                                ColorPickerField(
+                                    label = "Gradient Color 2",
+                                    color = config!!.backgroundGradientColors.getOrElse(1) { 0xFF000000.toInt() },
+                                    onClick = { showGradientColorPicker2 = true }
+                                )
+                                Text("Gradient Angle: ${config!!.backgroundGradientAngle.toInt()}°", style = MaterialTheme.typography.bodyLarge)
+                                Slider(
+                                    value = config!!.backgroundGradientAngle,
+                                    onValueChange = { config = config!!.copy(backgroundGradientAngle = it) },
+                                    valueRange = 0f..360f,
+                                    steps = 35
+                                )
+                            }
+                        }
                     }
                 }
+            }
 
-                // Preview Section
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+            Text("Presets", style = MaterialTheme.typography.headlineMedium)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(presets) { preset ->
+                    Card(
+                        onClick = { config = preset.copy(data = config!!.data) },
                     ) {
-                        QrCodePreview(config = config!!)
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            QrCodePreview(config = preset)
+                        }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(
+                    onClick = { isSheetOpen = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Show Preview")
+                }
                 Button(
                     onClick = {
                         scope.launch {
@@ -253,11 +394,11 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         is QrData.Contact -> data.name.isNotBlank()
                         is QrData.SocialMedia -> data.links.any { it.url.isNotBlank() }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Create Widget")
                 }
-        }
+            }
         }
     }
 
@@ -281,6 +422,62 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 showBackgroundColorPicker = false
             },
             onDismiss = { showBackgroundColorPicker = false }
+        )
+    }
+
+    if (showGradientColorPicker1) {
+        ColorPickerDialog(
+            initialColor = config!!.backgroundGradientColors.getOrElse(0) { 0xFFFFFFFF.toInt() },
+            showAlphaBar = true,
+            onColorSelected = {
+                val newColors = config!!.backgroundGradientColors.toMutableList()
+                newColors[0] = it
+                config = config!!.copy(backgroundGradientColors = newColors)
+                showGradientColorPicker1 = false
+            },
+            onDismiss = { showGradientColorPicker1 = false }
+        )
+    }
+
+    if (showGradientColorPicker2) {
+        ColorPickerDialog(
+            initialColor = config!!.backgroundGradientColors.getOrElse(1) { 0xFF000000.toInt() },
+            showAlphaBar = true,
+            onColorSelected = {
+                val newColors = config!!.backgroundGradientColors.toMutableList()
+                newColors[1] = it
+                config = config!!.copy(backgroundGradientColors = newColors)
+                showGradientColorPicker2 = false
+            },
+            onDismiss = { showGradientColorPicker2 = false }
+        )
+    }
+
+    if (showFgGradientColorPicker1) {
+        ColorPickerDialog(
+            initialColor = config!!.foregroundGradientColors.getOrElse(0) { 0xFF000000.toInt() },
+            showAlphaBar = true,
+            onColorSelected = {
+                val newColors = config!!.foregroundGradientColors.toMutableList()
+                newColors[0] = it
+                config = config!!.copy(foregroundGradientColors = newColors)
+                showFgGradientColorPicker1 = false
+            },
+            onDismiss = { showFgGradientColorPicker1 = false }
+        )
+    }
+
+    if (showFgGradientColorPicker2) {
+        ColorPickerDialog(
+            initialColor = config!!.foregroundGradientColors.getOrElse(1) { 0xFF0000FF.toInt() },
+            showAlphaBar = true,
+            onColorSelected = {
+                val newColors = config!!.foregroundGradientColors.toMutableList()
+                newColors[1] = it
+                config = config!!.copy(foregroundGradientColors = newColors)
+                showFgGradientColorPicker2 = false
+            },
+            onDismiss = { showFgGradientColorPicker2 = false }
         )
     }
 }
@@ -466,23 +663,25 @@ fun SocialMediaForm(socialMedia: QrData.SocialMedia, onSocialMediaChange: (QrDat
 
 @Composable
 fun ColorPickerField(label: String, color: Int, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(label, modifier = Modifier.weight(1f))
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = Color(color),
-                    shape = MaterialTheme.shapes.small
-                )
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(label, modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(
+                        color = Color(color),
+                        shape = MaterialTheme.shapes.small
+                    )
+            )
+        }
     }
 }
 

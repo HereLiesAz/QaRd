@@ -1,12 +1,15 @@
 package com.hereliesaz.qrlockscreen.widget
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
+import android.graphics.*
+import com.hereliesaz.qrlockscreen.data.BackgroundType
+import com.hereliesaz.qrlockscreen.data.ForegroundType
 import com.hereliesaz.qrlockscreen.data.QrConfig
 import com.hereliesaz.qrlockscreen.data.QrShape
+import com.hereliesaz.qrlockscreen.widget.shape.DiamondShapeFunction
 import qrcode.QRCode
 import com.hereliesaz.qrlockscreen.data.QrData
+import kotlin.math.cos
+import kotlin.math.sin
 
 object QrGenerator {
 
@@ -24,11 +27,19 @@ object QrGenerator {
                 QrShape.Circle -> QRCode.ofCircles()
                 QrShape.RoundSquare -> QRCode.ofRoundedSquares()
                 QrShape.Square -> QRCode.ofSquares()
+                QrShape.Diamond -> QRCode.ofCustomShape(DiamondShapeFunction())
             }
 
-            val qrCode = qrCodeBuilder
-                .withColor(config.foregroundColor)
-                .withBackgroundColor(config.backgroundColor)
+            val qrCodeBuilderWithColor = when (config.foregroundType) {
+                ForegroundType.SOLID -> qrCodeBuilder.withColor(config.foregroundColor)
+                ForegroundType.GRADIENT -> qrCodeBuilder.withGradientColor(
+                    config.foregroundGradientColors[0],
+                    config.foregroundGradientColors[1]
+                )
+            }
+
+            val qrCode = qrCodeBuilderWithColor
+                .withBackgroundColor(0x00000000) // Transparent background for the QR code itself
                 .build(dataString)
 
             val renderedBytes = qrCode.renderToBytes()
@@ -40,7 +51,28 @@ object QrGenerator {
             val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config)
 
             val canvas = Canvas(borderedBitmap)
-            canvas.drawColor(config.backgroundColor)
+
+            if (config.backgroundType == BackgroundType.SOLID) {
+                canvas.drawColor(config.backgroundColor)
+            } else {
+                val paint = Paint()
+                val angleInRadians = Math.toRadians(config.backgroundGradientAngle.toDouble())
+                // Calculate end point of the gradient line based on angle
+                val x1 = newSize * cos(angleInRadians).toFloat()
+                val y1 = newSize * sin(angleInRadians).toFloat()
+                val shader = LinearGradient(
+                    0f,
+                    0f,
+                    x1,
+                    y1,
+                    config.backgroundGradientColors.toIntArray(),
+                    null,
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = shader
+                canvas.drawRect(0f, 0f, newSize.toFloat(), newSize.toFloat(), paint)
+            }
+
             canvas.drawBitmap(qrBitmap, margin.toFloat(), margin.toFloat(), null)
 
             qrBitmap.recycle() // free up memory
