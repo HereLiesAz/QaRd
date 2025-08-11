@@ -19,7 +19,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qrlockscreen.data.QrDataStore
-import com.hereliesaz.qrLockscreen.widget.QrWidgetReceiver
+import com.hereliesaz.qrlockscreen.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
 
 class QrWidget : GlanceAppWidget() {

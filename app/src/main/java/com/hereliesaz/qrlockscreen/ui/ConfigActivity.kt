@@ -1,4 +1,4 @@
-package com.hereliesaz.qrLockscreen.ui
+package com.hereliesaz.qrlockscreen.ui
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager

@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hereliesaz.qrLockscreen"
+    namespace = "com.hereliesaz.qrlockscreen"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.hereliesaz.qrLockscreen"
+        applicationId = "com.hereliesaz.qrlockscreen"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

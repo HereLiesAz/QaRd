@@ -1,4 +1,4 @@
-package com.hereliesaz.qrLockscreen.widget
+package com.hereliesaz.qrlockscreen.widget
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
