@@ -10,10 +10,18 @@ import qrcode.shape.CircleShapeFunction
 import qrcode.shape.DefaultShapeFunction
 import qrcode.shape.RoundSquaresShapeFunction
 
+import com.hereliesaz.qrlockscreen.data.QrData
+
 object QrGenerator {
 
     fun generate(config: QrConfig): Bitmap? {
-        if (config.data.isBlank()) return null
+        val dataString = when (config.data) {
+            is QrData.Links -> config.data.links.joinToString("\n")
+            is QrData.Contact -> createVCard(config.data)
+            is QrData.SocialMedia -> config.data.links.joinToString("\n") { "${it.platform}: ${it.url}" }
+        }
+
+        if (dataString.isBlank()) return null
 
         return try {
             val qrCodeBuilder = when (config.shape) {
@@ -23,9 +31,9 @@ object QrGenerator {
             }
 
             val finalBuilder = qrCodeBuilder
-                .withColor(Colors.css(config.foregroundColor))
-                .withBackgroundColor(Colors.css(config.backgroundColor))
-                .build(config.data)
+                .withColor(config.foregroundColor)
+                .withBackgroundColor(config.backgroundColor)
+                .build(dataString)
 
 
             val renderedBytes = finalBuilder.renderToBytes()
@@ -34,5 +42,22 @@ object QrGenerator {
             e.printStackTrace()
             null
         }
+    }
+
+    private fun createVCard(contact: QrData.Contact): String {
+        val socialLinks = contact.socialLinks.joinToString("\n") {
+            "X-SOCIALPROFILE;type=${it.platform}:${it.url}"
+        }
+        return """
+            BEGIN:VCARD
+            VERSION:3.0
+            N:${contact.name}
+            ORG:${contact.organization}
+            TEL:${contact.phone}
+            URL:${contact.website}
+            EMAIL:${contact.email}
+            $socialLinks
+            END:VCARD
+        """.trimIndent()
     }
 }

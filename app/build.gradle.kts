@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hereliesaz.qrLockscreen"
+    namespace = "com.hereliesaz.qrlockscreen"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.hereliesaz.qrLockscreen"
+        applicationId = "com.hereliesaz.qrlockscreen"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -77,6 +77,9 @@ dependencies {
 
     // QR Code Generation
     implementation(libs.qrcode.kotlin.android)
+
+    // Color Picker
+    implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
 
 
     // Testing
