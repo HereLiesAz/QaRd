@@ -2,14 +2,10 @@ package com.hereliesaz.qrlockscreen.widget
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import com.hereliesaz.qrlockscreen.data.QrConfig
 import com.hereliesaz.qrlockscreen.data.QrShape
 import qrcode.QRCode
-import qrcode.color.Colors
-import qrcode.shape.CircleShapeFunction
-import qrcode.shape.DefaultShapeFunction
-import qrcode.shape.RoundSquaresShapeFunction
-
 import com.hereliesaz.qrlockscreen.data.QrData
 
 object QrGenerator {
@@ -30,14 +26,26 @@ object QrGenerator {
                 QrShape.Square -> QRCode.ofSquares()
             }
 
-            val finalBuilder = qrCodeBuilder
+            val qrCode = qrCodeBuilder
                 .withColor(config.foregroundColor)
                 .withBackgroundColor(config.backgroundColor)
                 .build(dataString)
 
+            val renderedBytes = qrCode.renderToBytes()
+            val qrBitmap = BitmapFactory.decodeByteArray(renderedBytes, 0, renderedBytes.size)
 
-            val renderedBytes = finalBuilder.renderToBytes()
-            BitmapFactory.decodeByteArray(renderedBytes, 0, renderedBytes.size)
+            // Add a margin to the QR code
+            val margin = (qrBitmap.width * 0.1f).toInt()
+            val newSize = qrBitmap.width + margin * 2
+            val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config)
+
+            val canvas = Canvas(borderedBitmap)
+            canvas.drawColor(config.backgroundColor)
+            canvas.drawBitmap(qrBitmap, margin.toFloat(), margin.toFloat(), null)
+
+            qrBitmap.recycle() // free up memory
+            borderedBitmap
+
         } catch (e: Exception) {
             e.printStackTrace()
             null
