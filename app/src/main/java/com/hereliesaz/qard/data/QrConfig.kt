@@ -1,9 +1,8 @@
-package com.hereliesaz.qrlockscreen.data
-
-import kotlinx.serialization.Serializable
+package com.hereliesaz.qard.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import kotlinx.serialization.Serializable
 
 enum class QrDataType {
     Links,

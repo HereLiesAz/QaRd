@@ -1,4 +1,4 @@
-package com.hereliesaz.qrlockscreen.data
+package com.hereliesaz.qard.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -7,7 +7,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 

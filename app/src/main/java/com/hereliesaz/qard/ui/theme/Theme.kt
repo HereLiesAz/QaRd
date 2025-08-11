@@ -1,4 +1,4 @@
-package com.hereliesaz.qrlockscreen.ui.theme
+package com.hereliesaz.qard.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun QrLockscreenTheme(
+fun QaRdTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

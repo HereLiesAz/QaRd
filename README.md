@@ -1,6 +1,6 @@
 # QR Lockscreen Widget
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hereliesaz/qrlockscreen/actions)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hereliesaz/qard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A simple Android widget that displays a QR code on your home screen or lock screen for quick and easy access.
@@ -52,7 +52,7 @@ To build and install the app from the source code, you will need:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/hereliesaz/qrlockscreen.git
+    git clone https://github.com/hereliesaz/qard.git
     ```
 2.  **Open the project in Android Studio.**
 3.  **Build the project:**
@@ -89,7 +89,7 @@ To build and install the app from the source code, you will need:
 
 Here is a brief overview of the key files and directories in the project:
 
-*   `app/src/main/java/com/hereliesaz/qrlockscreen/`: The main package for the application.
+* `app/src/main/java/com/hereliesaz/qard/`: The main package for the application.
     *   `data/`: Contains the data models and data store for the widget's configuration.
         *   `QrConfig.kt`: Defines the data structure for the QR code configuration.
         *   `QrDataStore.kt`: Handles saving and loading the widget's configuration.
