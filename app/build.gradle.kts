@@ -78,6 +78,9 @@ dependencies {
     // QR Code Generation
     implementation(libs.qrcode.kotlin.android)
 
+    // Color Picker
+    implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
+
 
     // Testing
     testImplementation(libs.junit)

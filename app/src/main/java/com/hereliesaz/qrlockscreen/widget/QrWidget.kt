@@ -18,6 +18,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
+import com.hereliesaz.qrlockscreen.data.QrData
 import com.hereliesaz.qrlockscreen.data.QrDataStore
 import com.hereliesaz.qrlockscreen.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
@@ -37,7 +38,12 @@ class QrWidget : GlanceAppWidget() {
                     .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (config.data.isNotBlank()) {
+                val dataIsNotBlank = when (val data = config.data) {
+                    is QrData.Links -> data.links.any { it.isNotBlank() }
+                    is QrData.Contact -> data.name.isNotBlank()
+                    is QrData.SocialMedia -> data.links.isNotEmpty()
+                }
+                if (dataIsNotBlank) {
                     val qrBitmap = QrGenerator.generate(config)
                     if (qrBitmap != null) {
                         Image(
