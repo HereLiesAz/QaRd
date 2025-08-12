@@ -448,6 +448,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         scope.launch {
                             Log.d("WidgetFlow", "Saving config for widget ID: $appWidgetId")
                             Log.d("WidgetFlow", "Config data: $currentConfig")
+
                             val currentSaved = dataStore.getSavedConfigs().first()
                             val newSaved = (currentSaved + currentConfig).distinct()
                             dataStore.saveConfigs(newSaved)
