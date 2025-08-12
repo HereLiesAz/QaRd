@@ -1,10 +1,10 @@
-package com.hereliesaz.qrlockscreen.widget
+package com.hereliesaz.qard.widget
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import com.hereliesaz.qrlockscreen.data.QrDataStore
-import com.hereliesaz.qrlockscreen.widget.QrWidget
+import com.hereliesaz.qard.data.QrDataStore
+import com.hereliesaz.qard.widget.QrWidget
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 

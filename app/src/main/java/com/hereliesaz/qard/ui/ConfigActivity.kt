@@ -1,4 +1,4 @@
-package com.hereliesaz.qrlockscreen.ui
+package com.hereliesaz.qard.ui
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
@@ -34,14 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
-import com.hereliesaz.qrlockscreen.data.*
-import com.hereliesaz.qrlockscreen.data.BackgroundType
-import com.hereliesaz.qrlockscreen.R
-import com.hereliesaz.qrlockscreen.data.ForegroundType
-import com.hereliesaz.qrlockscreen.data.SocialLink
-import com.hereliesaz.qrlockscreen.ui.theme.QrLockscreenTheme
-import com.hereliesaz.qrlockscreen.widget.QrGenerator
-import com.hereliesaz.qrlockscreen.widget.QrWidget
+import com.hereliesaz.qard.data.*
+import com.hereliesaz.qard.data.BackgroundType
+import com.hereliesaz.qard.R
+import com.hereliesaz.qard.data.ForegroundType
+import com.hereliesaz.qard.data.SocialLink
+import com.hereliesaz.qard.ui.theme.QrLockscreenTheme
+import com.hereliesaz.qard.widget.QrGenerator
+import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -172,7 +172,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = com.hereliesaz.qrlockscreen.R.mipmap.ic_launcher_round),
+                painter = painterResource(id = com.hereliesaz.qard.R.mipmap.ic_launcher_round),
                 contentDescription = "App Icon",
                 modifier = Modifier.size(64.dp)
             )

@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hereliesaz.qrlockscreen"
+    namespace = "com.hereliesaz.qard"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.hereliesaz.qrlockscreen"
+        applicationId = "com.hereliesaz.qard"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.appcompat)
 
     // Glance for AppWidgets
