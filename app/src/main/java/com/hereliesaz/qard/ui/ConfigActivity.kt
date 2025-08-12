@@ -92,6 +92,7 @@ private fun generateRandomPresets(): List<QrConfig> {
         fun randomColorList() = listOf(randomColor(), randomColor())
 
         QrConfig(
+            data = listOf(QrData.Links(links = listOf("https://github.com/hereliesaz/qard"))),
             shape = shape,
             foregroundType = fgType,
             foregroundColor = randomColor(),
@@ -169,29 +170,12 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(id = com.hereliesaz.qard.R.mipmap.ic_launcher_round),
                 contentDescription = "App Icon",
                 modifier = Modifier.size(64.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Configure QR Code",
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            var selectedDataType by remember(currentConfig) {
-                mutableStateOf(
-                    when (currentConfig.data) {
-                        is QrData.Links -> QrDataType.Links
-                        is QrData.Contact -> QrDataType.Contact
-                        is QrData.SocialMedia -> QrDataType.SocialMedia
-                    }
-                )
-            }
 
             // Data Section
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -200,28 +184,76 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text("Data", style = MaterialTheme.typography.headlineMedium)
-                    DataTypeSelector(
-                        selectedType = selectedDataType,
-                        onTypeSelected = { newType ->
-                            selectedDataType = newType
-                            val newData = when (newType) {
-                                QrDataType.Links -> QrData.Links()
-                                QrDataType.Contact -> QrData.Contact()
-                                QrDataType.SocialMedia -> QrData.SocialMedia()
-                            }
-                            config = currentConfig.copy(data = newData)
-                        }
-                    )
 
-                    when (val data = currentConfig.data) {
-                        is QrData.Links -> LinksForm(links = data) { newLinks ->
-                            config = currentConfig.copy(data = newLinks)
+                    val selectedTypes = remember(currentConfig.data) {
+                        currentConfig.data.map {
+                            when (it) {
+                                is QrData.Links -> QrDataType.Links
+                                is QrData.Contact -> QrDataType.Contact
+                                is QrData.SocialMedia -> QrDataType.SocialMedia
+                            }
                         }
-                        is QrData.Contact -> ContactForm(contact = data) { newContact ->
-                            config = currentConfig.copy(data = newContact)
+                    }
+
+                    MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        QrDataType.values().forEachIndexed { index, type ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = QrDataType.values().size),
+                                onCheckedChange = { isChecked ->
+                                    val currentData = currentConfig.data.toMutableList()
+                                    if (isChecked) {
+                                        if (selectedTypes.none { it == type }) {
+                                            val newData = when (type) {
+                                                QrDataType.Links -> QrData.Links(links = listOf(""))
+                                                QrDataType.Contact -> QrData.Contact()
+                                                QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("","")))
+                                            }
+                                            currentData.add(newData)
+                                        }
+                                    } else {
+                                        currentData.removeAll {
+                                            when(it) {
+                                                is QrData.Links -> type == QrDataType.Links
+                                                is QrData.Contact -> type == QrDataType.Contact
+                                                is QrData.SocialMedia -> type == QrDataType.SocialMedia
+                                            }
+                                        }
+                                    }
+                                    config = currentConfig.copy(data = currentData)
+                                },
+                                checked = type in selectedTypes
+                            ) {
+                                Text(type.name)
+                            }
                         }
-                        is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
-                            config = currentConfig.copy(data = newSocialMedia)
+                    }
+
+                    currentConfig.data.forEach { data ->
+                        when (data) {
+                            is QrData.Links -> LinksForm(links = data) { newLinks ->
+                                val newDataList = currentConfig.data.toMutableList()
+                                val index = newDataList.indexOf(data)
+                                if (index != -1) {
+                                    newDataList[index] = newLinks
+                                    config = currentConfig.copy(data = newDataList)
+                                }
+                            }
+                            is QrData.Contact -> ContactForm(contact = data) { newContact ->
+                                val newDataList = currentConfig.data.toMutableList()
+                                val index = newDataList.indexOf(data)
+                                if (index != -1) {
+                                    newDataList[index] = newContact
+                                    config = currentConfig.copy(data = newDataList)
+                                }
+                            }
+                            is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
+                                val newDataList = currentConfig.data.toMutableList()
+                                val index = newDataList.indexOf(data)
+                                if (index != -1) {
+                                    newDataList[index] = newSocialMedia
+                                    config = currentConfig.copy(data = newDataList)
+                                }
+                            }
                         }
                     }
                 }
@@ -369,6 +401,28 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 }
             }
 
+            Text("Saved", style = MaterialTheme.typography.headlineMedium)
+            var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
+            LaunchedEffect(key1 = Unit) {
+                dataStore.getSavedConfigs().collect {
+                    savedConfigs = it
+                }
+            }
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(items = savedConfigs) { savedConfig ->
+                    Card(
+                        onClick = { config = savedConfig },
+                    ) {
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            QrCodePreview(config = savedConfig)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             Row(
@@ -384,6 +438,10 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 Button(
                     onClick = {
                         scope.launch {
+                            val currentSaved = dataStore.getSavedConfigs().first()
+                            val newSaved = (currentSaved + currentConfig).distinct()
+                            dataStore.saveConfigs(newSaved)
+
                             dataStore.saveConfig(appWidgetId, currentConfig)
                             val glanceId =
                                 GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
@@ -391,10 +449,12 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                             onConfigComplete()
                         }
                     },
-                    enabled = when (val data = currentConfig.data) {
-                        is QrData.Links -> data.links.any { it.isNotBlank() }
-                        is QrData.Contact -> data.name.isNotBlank()
-                        is QrData.SocialMedia -> data.links.any { it.url.isNotBlank() }
+                    enabled = currentConfig.data.any {
+                        when (it) {
+                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                            is QrData.Contact -> it.name.isNotBlank()
+                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                        }
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -484,46 +544,6 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DataTypeSelector(
-    selectedType: QrDataType,
-    onTypeSelected: (QrDataType) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val items = QrDataType.values()
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            readOnly = true,
-            value = selectedType.name,
-            onValueChange = {},
-            label = { Text("Data Type") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            items.forEach { selectionOption ->
-                DropdownMenuItem(
-                    text = { Text(selectionOption.name) },
-                    onClick = {
-                        onTypeSelected(selectionOption)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
 @Composable
 fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -556,42 +576,6 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
             onValueChange = { onContactChange(contact.copy(website = it)) },
             label = { Text("Website") },
             modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Social Media Links", style = MaterialTheme.typography.titleMedium)
-
-        EditableList(
-            items = contact.socialLinks,
-            onAdd = { onContactChange(contact.copy(socialLinks = contact.socialLinks + SocialLink("", ""))) },
-            onRemove = { index -> onContactChange(contact.copy(socialLinks = contact.socialLinks.filterIndexed { i, _ -> i != index })) },
-            itemContent = { index, item ->
-                Row {
-                    OutlinedTextField(
-                        value = item.platform,
-                        onValueChange = { newPlatform ->
-                            val newLinks = contact.socialLinks.toMutableList().apply {
-                                set(index, item.copy(platform = newPlatform))
-                            }
-                            onContactChange(contact.copy(socialLinks = newLinks))
-                        },
-                        label = { Text("Platform") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedTextField(
-                        value = item.url,
-                        onValueChange = { newUrl ->
-                            val newLinks = contact.socialLinks.toMutableList().apply {
-                                set(index, item.copy(url = newUrl))
-                            }
-                            onContactChange(contact.copy(socialLinks = newLinks))
-                        },
-                        label = { Text("URL") },
-                        modifier = Modifier.weight(2f)
-                    )
-                }
-            }
         )
     }
 }
