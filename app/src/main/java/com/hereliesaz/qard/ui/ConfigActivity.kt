@@ -174,6 +174,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
         ) {
             Image(
                 painter = painterResource(id = com.hereliesaz.qard.R.drawable.ic_launcher),
+
                 contentDescription = "App Icon",
                 modifier = Modifier.size(64.dp)
             )
