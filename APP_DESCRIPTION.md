@@ -1,4 +1,4 @@
-# App Description for QR Lockscreen Widget
+# App Description for QaRd Widget
 
 ## Short Description (Max 80 characters)
 
@@ -8,7 +8,9 @@ A simple, customizable widget to display a QR code on your home or lock screen.
 
 ## Full Description
 
-Display a QR code directly on your home screen or lock screen with the QR Lockscreen Widget! This simple and highly customizable widget allows you to share information quickly and easily without even opening an app.
+Display a QR code directly on your home screen or lock screen with the QaRd Widget! This simple and
+highly customizable widget allows you to share information quickly and easily without even opening
+an app.
 
 **Key Features:**
 
@@ -22,7 +24,7 @@ Display a QR code directly on your home screen or lock screen with the QR Locksc
 
 **How it Works:**
 
-1.  Add the "QR Lockscreen Widget" to your home screen.
+1. Add the "QaRd Widget" to your home screen.
 2.  In the configuration screen, enter the text for your QR code.
 3.  Customize the shape and colors.
 4.  That's it! Your QR code is now ready on your screen.
@@ -33,4 +35,4 @@ The ability to place widgets directly on the lock screen depends on your Android
 
 For all other supported Android devices, the widget works perfectly on the **home screen**.
 
-Download QR Lockscreen Widget today and put your important information just a glance away!
+Download QaRd Widget today and put your important information just a glance away!

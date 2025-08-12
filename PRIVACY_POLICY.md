@@ -1,12 +1,14 @@
-# Privacy Policy for QR Lockscreen Widget
+# Privacy Policy for QaRd Widget
 
 **Last Updated: 2025-08-11**
 
-Thank you for choosing QR Lockscreen Widget. This Privacy Policy is intended to inform you about how we handle information when you use our application.
+Thank you for choosing QaRd Widget. This Privacy Policy is intended to inform you about how we
+handle information when you use our application.
 
 ## 1. Information We Do Not Collect
 
-We want to be crystal clear: **QR Lockscreen Widget does not collect, store, or transmit any personal data from your device.**
+We want to be crystal clear: **QaRd Widget does not collect, store, or transmit any personal data
+from your device.**
 
 The application is designed to be a simple, offline utility. All the data you provide for generating a QR code is stored locally on your device and is never sent to us or any third party.
 
@@ -25,7 +27,9 @@ The only data the app handles is the text you provide to generate the QR code. T
 
 ## 3. Permissions
 
-QR Lockscreen Widget does not request any special permissions that would allow it to access your personal information. The app only uses the standard permissions required to function as a home screen widget.
+QaRd Widget does not request any special permissions that would allow it to access your personal
+information. The app only uses the standard permissions required to function as a home screen
+widget.
 
 ## 4. Changes to This Privacy Policy
 

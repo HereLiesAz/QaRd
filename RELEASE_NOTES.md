@@ -1,10 +1,11 @@
-# Release Notes: QR Lockscreen Widget v1.0.0
+# Release Notes: QaRd Widget v1.0.0
 
 **Release Date:** 2025-08-11
 
 ## Summary
 
-This is the initial release of the QR Lockscreen Widget, a simple and customizable widget for displaying QR codes on your Android home screen and lock screen.
+This is the initial release of the QaRd Widget, a simple and customizable widget for displaying QR
+codes on your Android home screen and lock screen.
 
 ## What's New
 
@@ -26,4 +27,5 @@ This is the initial release of the QR Lockscreen Widget, a simple and customizab
 
 You can install the app by downloading the latest APK from our GitHub Releases page.
 
-Thank you for using QR Lockscreen Widget! We welcome your feedback and contributions on our GitHub repository.
+Thank you for using QaRd Widget! We welcome your feedback and contributions on our GitHub
+repository.
