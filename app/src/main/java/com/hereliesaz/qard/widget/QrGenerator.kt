@@ -1,13 +1,13 @@
-package com.hereliesaz.qrlockscreen.widget
+package com.hereliesaz.qard.widget
 
 import android.graphics.*
-import com.hereliesaz.qrlockscreen.data.BackgroundType
-import com.hereliesaz.qrlockscreen.data.ForegroundType
-import com.hereliesaz.qrlockscreen.data.QrConfig
-import com.hereliesaz.qrlockscreen.data.QrShape
-import com.hereliesaz.qrlockscreen.widget.shape.DiamondShapeFunction
+import com.hereliesaz.qard.data.BackgroundType
+import com.hereliesaz.qard.data.ForegroundType
+import com.hereliesaz.qard.data.QrConfig
+import com.hereliesaz.qard.data.QrShape
+import com.hereliesaz.qard.widget.shape.DiamondShapeFunction
 import qrcode.QRCode
-import com.hereliesaz.qrlockscreen.data.QrData
+import com.hereliesaz.qard.data.QrData
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -50,7 +50,7 @@ object QrGenerator {
             // Add a margin to the QR code
             val margin = (qrBitmap.width * 0.1f).toInt()
             val newSize = qrBitmap.width + margin * 2
-            val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config)
+            val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config ?: Bitmap.Config.ARGB_8888)
 
             val canvas = Canvas(borderedBitmap)
 
