@@ -1,6 +1,7 @@
 package com.hereliesaz.qard.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -42,20 +43,17 @@ class QrDataStore(context: Context) {
     fun getConfig(appWidgetId: Int): Flow<QrConfig> {
         return dataStore.data.map { preferences ->
             preferences[configKey(appWidgetId)]?.let { jsonString ->
+                Log.d("WidgetFlow", "Reading jsonString for widget ID $appWidgetId: $jsonString")
                 try {
-                    val jsonObject = Json.parseToJsonElement(jsonString) as JsonObject
-                    val data = jsonObject["data"]
-                    if (data is JsonPrimitive) {
-                        // Old format, data is a string
-                        QrConfig(data = QrData.Links(listOf(data.content)))
-                    } else {
-                        // New format
-                        Json.decodeFromJsonElement(QrConfig.serializer(), jsonObject)
-                    }
+                    Json.decodeFromString<QrConfig>(jsonString)
                 } catch (e: Exception) {
+                    Log.e("WidgetFlow", "Deserialization failed for widget ID $appWidgetId", e)
                     QrConfig() // Return default on deserialization error
                 }
-            } ?: QrConfig() // Return default config if nothing is stored
+            } ?: run {
+                Log.d("WidgetFlow", "No config found for widget ID $appWidgetId. Returning default.")
+                QrConfig()
+            }
         }
     }
 

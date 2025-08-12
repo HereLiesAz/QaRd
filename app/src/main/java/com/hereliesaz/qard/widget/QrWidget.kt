@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -28,7 +29,9 @@ class QrWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val dataStore = QrDataStore(context)
         val appWidgetId = getAppWidgetId(context, id)
+        Log.d("WidgetFlow", "provideGlance for widget ID: $appWidgetId")
         val config = dataStore.getConfig(appWidgetId).first()
+        Log.d("WidgetFlow", "Config received in widget: $config")
 
         provideContent {
             Box(
@@ -45,6 +48,7 @@ class QrWidget : GlanceAppWidget() {
                         is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
                     }
                 }
+                Log.d("WidgetFlow", "Widget dataIsNotBlank: $dataIsNotBlank")
                 if (dataIsNotBlank) {
                     val qrBitmap = QrGenerator.generate(config)
                     if (qrBitmap != null) {

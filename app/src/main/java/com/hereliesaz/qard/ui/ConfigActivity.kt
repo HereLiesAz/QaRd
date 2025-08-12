@@ -43,6 +43,7 @@ import com.hereliesaz.qard.ui.theme.QrLockscreenTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
+import android.util.Log
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -445,6 +446,9 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 Button(
                     onClick = {
                         scope.launch {
+                            Log.d("WidgetFlow", "Saving config for widget ID: $appWidgetId")
+                            Log.d("WidgetFlow", "Config data: $currentConfig")
+
                             val currentSaved = dataStore.getSavedConfigs().first()
                             val newSaved = (currentSaved + currentConfig).distinct()
                             dataStore.saveConfigs(newSaved)
