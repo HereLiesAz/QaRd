@@ -38,10 +38,12 @@ class QrWidget : GlanceAppWidget() {
                     .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val dataIsNotBlank = when (val data = config.data) {
-                    is QrData.Links -> data.links.any { it.isNotBlank() }
-                    is QrData.Contact -> data.name.isNotBlank()
-                    is QrData.SocialMedia -> data.links.isNotEmpty()
+                val dataIsNotBlank = config.data.any {
+                    when (it) {
+                        is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                        is QrData.Contact -> it.name.isNotBlank()
+                        is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                    }
                 }
                 if (dataIsNotBlank) {
                     val qrBitmap = QrGenerator.generate(config)
@@ -63,18 +65,8 @@ class QrWidget : GlanceAppWidget() {
         }
     }
 
-    private suspend fun getAppWidgetId(context: Context, glanceId: GlanceId): Int {
-        val glanceManager = GlanceAppWidgetManager(context)
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val componentName = ComponentName(context, QrWidgetReceiver::class.java)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-
-        for (appWidgetId in appWidgetIds) {
-            if (glanceManager.getGlanceIdBy(appWidgetId) == glanceId) {
-                return appWidgetId
-            }
-        }
-        return AppWidgetManager.INVALID_APPWIDGET_ID
+    private fun getAppWidgetId(context: Context, glanceId: GlanceId): Int {
+        return GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
     }
 
     private fun createTransparentBitmap(): Bitmap {

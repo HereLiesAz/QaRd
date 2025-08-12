@@ -256,6 +256,13 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                             }
                         }
                     }
+
+                    Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
+                    Slider(
+                        value = currentConfig.backgroundAlpha,
+                        onValueChange = { config = currentConfig.copy(backgroundAlpha = it) },
+                        valueRange = 0f..1f
+                    )
                 }
             }
 

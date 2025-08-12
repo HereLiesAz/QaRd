@@ -54,6 +54,7 @@ data class QrConfig(
     val backgroundColor: Int = 0xFFFFFFFF.toInt(),
     val backgroundGradientColors: List<Int> = listOf(Color.White.toArgb(), Color.Black.toArgb()),
     val backgroundGradientAngle: Float = 0f,
+    val backgroundAlpha: Float = 1f,
 )
 
 @Serializable

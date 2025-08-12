@@ -61,19 +61,33 @@ object QrGenerator {
             val canvas = Canvas(borderedBitmap)
 
             if (config.backgroundType == BackgroundType.SOLID) {
-                canvas.drawColor(config.backgroundColor)
+                val colorInt = config.backgroundColor
+                val red = Color.red(colorInt)
+                val green = Color.green(colorInt)
+                val blue = Color.blue(colorInt)
+                val alpha = (config.backgroundAlpha * 255).toInt()
+                canvas.drawColor(Color.argb(alpha, red, green, blue))
             } else {
                 val paint = Paint()
                 val angleInRadians = Math.toRadians(config.backgroundGradientAngle.toDouble())
                 // Calculate end point of the gradient line based on angle
                 val x1 = newSize * cos(angleInRadians).toFloat()
                 val y1 = newSize * sin(angleInRadians).toFloat()
+
+                val colorsWithAlpha = config.backgroundGradientColors.map {
+                    val red = Color.red(it)
+                    val green = Color.green(it)
+                    val blue = Color.blue(it)
+                    val alpha = (config.backgroundAlpha * 255).toInt()
+                    Color.argb(alpha, red, green, blue)
+                }.toIntArray()
+
                 val shader = LinearGradient(
                     0f,
                     0f,
                     x1,
                     y1,
-                    config.backgroundGradientColors.toIntArray(),
+                    colorsWithAlpha,
                     null,
                     Shader.TileMode.CLAMP
                 )
