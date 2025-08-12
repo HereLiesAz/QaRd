@@ -17,6 +17,26 @@ class QrDataStore(context: Context) {
 
     companion object {
         fun configKey(appWidgetId: Int) = stringPreferencesKey("config_v2_$appWidgetId")
+        val SAVED_CONFIGS = stringPreferencesKey("saved_configs_list")
+    }
+
+    fun getSavedConfigs(): Flow<List<QrConfig>> {
+        return dataStore.data.map { preferences ->
+            preferences[SAVED_CONFIGS]?.let { jsonString ->
+                try {
+                    Json.decodeFromString<List<QrConfig>>(jsonString)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            } ?: emptyList()
+        }
+    }
+
+    suspend fun saveConfigs(configs: List<QrConfig>) {
+        val jsonString = Json.encodeToString(configs)
+        dataStore.edit { settings ->
+            settings[SAVED_CONFIGS] = jsonString
+        }
     }
 
     fun getConfig(appWidgetId: Int): Flow<QrConfig> {
