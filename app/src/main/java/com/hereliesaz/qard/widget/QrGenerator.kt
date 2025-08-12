@@ -14,10 +14,16 @@ import kotlin.math.sin
 object QrGenerator {
 
     fun generate(config: QrConfig): Bitmap? {
-        val dataString = when (val data = config.data) {
-            is QrData.Links -> data.links.filter { it.isNotBlank() }.joinToString("\n")
-            is QrData.Contact -> createVCard(data)
-            is QrData.SocialMedia -> data.links.filter { it.url.isNotBlank() }.joinToString("\n") { "${it.platform}: ${it.url}" }
+        if (config.data.isEmpty()) return null
+
+        val contactData = config.data.filterIsInstance<QrData.Contact>().firstOrNull()
+        val socialMediaData = config.data.filterIsInstance<QrData.SocialMedia>().flatMap { it.links }
+        val linksData = config.data.filterIsInstance<QrData.Links>().flatMap { it.links }
+
+        val dataString = if (contactData != null) {
+            createVCard(contactData, socialMediaData, linksData)
+        } else {
+            (socialMediaData.map { "${it.platform}: ${it.url}" } + linksData).joinToString("\n")
         }
 
         if (dataString.isBlank()) return null
@@ -55,19 +61,33 @@ object QrGenerator {
             val canvas = Canvas(borderedBitmap)
 
             if (config.backgroundType == BackgroundType.SOLID) {
-                canvas.drawColor(config.backgroundColor)
+                val colorInt = config.backgroundColor
+                val red = Color.red(colorInt)
+                val green = Color.green(colorInt)
+                val blue = Color.blue(colorInt)
+                val alpha = (config.backgroundAlpha * 255).toInt()
+                canvas.drawColor(Color.argb(alpha, red, green, blue))
             } else {
                 val paint = Paint()
                 val angleInRadians = Math.toRadians(config.backgroundGradientAngle.toDouble())
                 // Calculate end point of the gradient line based on angle
                 val x1 = newSize * cos(angleInRadians).toFloat()
                 val y1 = newSize * sin(angleInRadians).toFloat()
+
+                val colorsWithAlpha = config.backgroundGradientColors.map {
+                    val red = Color.red(it)
+                    val green = Color.green(it)
+                    val blue = Color.blue(it)
+                    val alpha = (config.backgroundAlpha * 255).toInt()
+                    Color.argb(alpha, red, green, blue)
+                }.toIntArray()
+
                 val shader = LinearGradient(
                     0f,
                     0f,
                     x1,
                     y1,
-                    config.backgroundGradientColors.toIntArray(),
+                    colorsWithAlpha,
                     null,
                     Shader.TileMode.CLAMP
                 )
@@ -86,9 +106,12 @@ object QrGenerator {
         }
     }
 
-    private fun createVCard(contact: QrData.Contact): String {
-        val socialLinks = contact.socialLinks.filter { it.url.isNotBlank() }.joinToString("\n") {
+    private fun createVCard(contact: QrData.Contact, socialLinks: List<com.hereliesaz.qard.data.SocialLink>, links: List<String>): String {
+        val socialLinksStr = socialLinks.filter { it.url.isNotBlank() }.joinToString("\n") {
             "X-SOCIALPROFILE;type=${it.platform}:${it.url}"
+        }
+        val linksStr = links.filter { it.isNotBlank() }.joinToString("\n") {
+            "URL:$it"
         }
         return """
             BEGIN:VCARD
@@ -98,7 +121,8 @@ object QrGenerator {
             TEL:${contact.phone}
             URL:${contact.website}
             EMAIL:${contact.email}
-            $socialLinks
+            $socialLinksStr
+            $linksStr
             END:VCARD
         """.trimIndent()
     }

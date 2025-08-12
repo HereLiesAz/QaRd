@@ -22,7 +22,6 @@ sealed class QrData {
         val email: String = "",
         val organization: String = "",
         val website: String = "",
-        val socialLinks: List<SocialLink> = emptyList()
     ) : QrData()
 
     @Serializable
@@ -46,7 +45,7 @@ enum class ForegroundType {
 
 @Serializable
 data class QrConfig(
-    val data: QrData = QrData.Links(),
+    val data: List<QrData> = emptyList(),
     val shape: QrShape = QrShape.Square,
     val foregroundType: ForegroundType = ForegroundType.SOLID,
     val foregroundColor: Int = 0xFF000000.toInt(),
@@ -55,6 +54,7 @@ data class QrConfig(
     val backgroundColor: Int = 0xFFFFFFFF.toInt(),
     val backgroundGradientColors: List<Int> = listOf(Color.White.toArgb(), Color.Black.toArgb()),
     val backgroundGradientAngle: Float = 0f,
+    val backgroundAlpha: Float = 1f,
 )
 
 @Serializable
