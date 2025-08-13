@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    tools:context=".MainActivity"
+    xsi:schemaLocation="http://schemas.android.com/apk/res/android">
 
     <EditText
         android:id="@+id/qr_code_data_edit_text"
