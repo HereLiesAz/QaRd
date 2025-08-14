@@ -45,6 +45,7 @@ enum class ForegroundType {
 
 @Serializable
 data class QrConfig(
+    val creationDate: Long = System.currentTimeMillis(),
     val data: List<QrData> = emptyList(),
     val shape: QrShape = QrShape.Square,
     val foregroundType: ForegroundType = ForegroundType.SOLID,
