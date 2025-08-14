@@ -1,11 +1,11 @@
 [versions]
 androidApplication = "8.12.0"
 kotlin = "2.2.0"
-coreKtx = "1.16.0"
+coreKtx = "1.17.0"
 kotlinxSerializationJson = "1.9.0"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.10.1"
-composeBom = "2025.07.00"
+composeBom = "2025.08.00"
 glance = "1.1.1"
 datastore = "1.1.7"
 junit = "4.13.2"
@@ -14,7 +14,7 @@ espressoCore = "3.7.0"
 kotlinSerializationPlugin = "1.9.23"
 qrcodeKotlinAndroid = "4.5.0"
 appcompat = "1.7.1" # Added appcompat version
-constraintlayout = "2.1.4" # Add this line for ConstraintLayout version
+constraintlayout = "2.2.1" # Add this line for ConstraintLayout version
 
 [libraries]
 # Core & UI

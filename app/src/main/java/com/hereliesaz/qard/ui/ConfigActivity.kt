@@ -39,13 +39,16 @@ import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.R
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.SocialLink
-import com.hereliesaz.qard.ui.theme.QrLockscreenTheme
+import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
 import android.util.Log
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 class ConfigActivity : ComponentActivity() {
@@ -69,7 +72,7 @@ class ConfigActivity : ComponentActivity() {
         }
 
         setContent {
-            QrLockscreenTheme {
+            QaRdTheme {
                 ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) {
                     // This lambda is called when configuration is complete
                     val resultValue =
@@ -156,6 +159,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Text("Preview", style = MaterialTheme.typography.headlineSmall)
                 QrCodePreview(config = currentConfig)
             }
         }
@@ -173,7 +177,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                painter = painterResource(id = R.drawable.ic_launcher),
                 contentDescription = "App Icon",
                 modifier = Modifier.size(64.dp)
             )
@@ -736,21 +740,46 @@ fun ColorPickerDialog(
 
 @Composable
 fun QrCodePreview(config: QrConfig) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    var qrBitmap by remember(config) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var isGenerating by remember(config) { mutableStateOf(true) }
+
+    val hasValidData = remember(config) {
+        config.data.any {
+            when (it) {
+                is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                is QrData.Contact -> it.name.isNotBlank()
+                is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+            }
+        }
+    }
+
+    LaunchedEffect(config) {
+        if (hasValidData) {
+            isGenerating = true
+            qrBitmap = withContext(Dispatchers.IO) {
+                QrGenerator.generate(config)
+            }
+            isGenerating = false
+        } else {
+            qrBitmap = null
+            isGenerating = false
+        }
+    }
+
+    Box(
+        modifier = Modifier.size(150.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text("Preview", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
-        val qrBitmap = QrGenerator.generate(config)
         if (qrBitmap != null) {
             Image(
-                bitmap = qrBitmap.asImageBitmap(),
+                bitmap = qrBitmap!!.asImageBitmap(),
                 contentDescription = "QR Code Preview",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.fillMaxSize()
             )
+        } else if (isGenerating) {
+            CircularProgressIndicator()
         } else {
-            Text("Enter data to see preview")
+            Text("Enter data to see preview", textAlign = TextAlign.Center)
         }
     }
 }
