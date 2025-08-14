@@ -45,9 +45,10 @@ object QrGenerator {
 
             val qrCodeBuilderWithColor = when (config.foregroundType) {
                 ForegroundType.SOLID -> qrCodeBuilder.withColor(config.foregroundColor)
+                // FIX 1: Use getOrElse for safe access to prevent IndexOutOfBoundsException
                 ForegroundType.GRADIENT -> qrCodeBuilder.withGradientColor(
-                    config.foregroundGradientColors[0],
-                    config.foregroundGradientColors[1]
+                    config.foregroundGradientColors.getOrElse(0) { Color.BLACK },
+                    config.foregroundGradientColors.getOrElse(1) { Color.BLUE }
                 )
             }
 
@@ -74,11 +75,17 @@ object QrGenerator {
                 val alpha = (config.backgroundAlpha * 255).toInt()
                 canvas.drawColor(Color.argb(alpha, red, green, blue))
             } else {
+                // FIX 2: Correctly calculate gradient start/end points to span the whole bitmap
                 val paint = Paint()
+                val centerX = newSize / 2f
+                val centerY = newSize / 2f
+                val radius = newSize / 2f
                 val angleInRadians = Math.toRadians(config.backgroundGradientAngle.toDouble())
-                // Calculate end point of the gradient line based on angle
-                val x1 = newSize * cos(angleInRadians).toFloat()
-                val y1 = newSize * sin(angleInRadians).toFloat()
+
+                val startX = centerX - radius * cos(angleInRadians).toFloat()
+                val startY = centerY - radius * sin(angleInRadians).toFloat()
+                val endX = centerX + radius * cos(angleInRadians).toFloat()
+                val endY = centerY + radius * sin(angleInRadians).toFloat()
 
                 val colorsWithAlpha = config.backgroundGradientColors.map {
                     val red = Color.red(it)
@@ -89,10 +96,10 @@ object QrGenerator {
                 }.toIntArray()
 
                 val shader = LinearGradient(
-                    0f,
-                    0f,
-                    x1,
-                    y1,
+                    startX,
+                    startY,
+                    endX,
+                    endY,
                     colorsWithAlpha,
                     null,
                     Shader.TileMode.CLAMP

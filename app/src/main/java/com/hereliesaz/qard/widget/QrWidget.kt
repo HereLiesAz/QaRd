@@ -1,11 +1,10 @@
 package com.hereliesaz.qard.widget
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -21,7 +20,6 @@ import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
-import com.hereliesaz.qard.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
 
 class QrWidget : GlanceAppWidget() {
@@ -74,7 +72,7 @@ class QrWidget : GlanceAppWidget() {
     }
 
     private fun createTransparentBitmap(): Bitmap {
-        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(1, 1)
         bitmap.eraseColor(0)
         return bitmap
     }
