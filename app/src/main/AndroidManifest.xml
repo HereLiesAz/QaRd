@@ -24,14 +24,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.ConfigActivity"
-            android:exported="true"
-            android:theme="@style/Theme.QaRd">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
         <receiver
             android:name=".widget.QrWidgetReceiver"
