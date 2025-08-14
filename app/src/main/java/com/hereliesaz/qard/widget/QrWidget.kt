@@ -1,10 +1,8 @@
 package com.hereliesaz.qard.widget
 
-import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.util.Log
 import androidx.compose.ui.unit.dp
 import androidx.glance.ExperimentalGlanceApi
@@ -40,17 +38,12 @@ class QrWidget : GlanceAppWidget() {
 
         provideContent {
             val intent = Intent(context, ConfigActivity::class.java)
-            val activityOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-            } else {
-                null
-            }
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(ImageProvider(createTransparentBitmap())) // Use transparent background
                     .padding(8.dp)
-                    .clickable(actionStartActivity(intent, activityOptions = activityOptions?.toBundle())),
+                    .clickable(actionStartActivity(intent)),
                 contentAlignment = Alignment.Center
             ) {
                 val dataIsNotBlank = config.data.any {
