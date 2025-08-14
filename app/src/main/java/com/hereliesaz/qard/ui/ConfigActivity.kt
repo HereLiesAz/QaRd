@@ -4,13 +4,24 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -21,8 +32,33 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,19 +67,21 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
-import com.hereliesaz.qard.data.*
-import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.R
+import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
+import com.hereliesaz.qard.data.QrConfig
+import com.hereliesaz.qard.data.QrData
+import com.hereliesaz.qard.data.QrDataStore
+import com.hereliesaz.qard.data.QrDataType
+import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
-import com.materialkolor.DynamicMaterialTheme
-import android.util.Log
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -85,9 +123,9 @@ class ConfigActivity : ComponentActivity() {
 private fun generateRandomPresets(): List<QrConfig> {
     return (1..20).map {
         val random = Random.Default
-        val shape = QrShape.values().random()
-        val fgType = ForegroundType.values().random()
-        val bgType = BackgroundType.values().random()
+        val shape = QrShape.entries.toTypedArray().random()
+        val fgType = ForegroundType.entries.toTypedArray().random()
+        val bgType = BackgroundType.entries.toTypedArray().random()
 
         fun randomColor() = Color(random.nextFloat(), random.nextFloat(), random.nextFloat(), 1f).toArgb()
         fun randomColorList() = listOf(randomColor(), randomColor())
@@ -197,9 +235,12 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     }
 
                     MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        QrDataType.values().forEachIndexed { index, type ->
+                        QrDataType.entries.forEachIndexed { index, type ->
                             SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = QrDataType.values().size),
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = QrDataType.entries.size
+                                ),
                                 onCheckedChange = { isChecked ->
                                     val currentData = currentConfig.data.toMutableList()
                                     if (isChecked) {
@@ -277,9 +318,12 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
 
                     Text("Background Type", style = MaterialTheme.typography.bodyLarge)
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        BackgroundType.values().forEachIndexed { index, backgroundType ->
+                        BackgroundType.entries.forEachIndexed { index, backgroundType ->
                             SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = BackgroundType.entries.size
+                                ),
                                 onClick = { config = currentConfig.copy(backgroundType = backgroundType) },
                                 selected = currentConfig.backgroundType == backgroundType
                             ) {
@@ -293,7 +337,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(items = QrShape.values()) { shape ->
+                        items(items = QrShape.entries.toTypedArray()) { shape ->
                             val isSelected = currentConfig.shape == shape
                             Card(
                                 onClick = { config = currentConfig.copy(shape = shape) },
@@ -312,7 +356,6 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                             QrShape.Circle -> Icons.Default.Circle
                                             QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
                                             QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
-                                            else -> Icons.Default.CropSquare
                                         },
                                         contentDescription = shape.name,
                                         modifier = Modifier.size(48.dp)
@@ -325,9 +368,12 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
 
                     Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        ForegroundType.values().forEachIndexed { index, foregroundType ->
+                        ForegroundType.entries.forEachIndexed { index, foregroundType ->
                             SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = ForegroundType.entries.size
+                                ),
                                 onClick = { config = currentConfig.copy(foregroundType = foregroundType) },
                                 selected = currentConfig.foregroundType == foregroundType
                             ) {
