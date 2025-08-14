@@ -3,6 +3,7 @@ package com.hereliesaz.qard.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.unit.dp
@@ -15,12 +16,15 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
+import com.hereliesaz.qard.ui.ConfigActivity
 import com.hereliesaz.qard.widget.QrWidgetReceiver
 import kotlinx.coroutines.flow.first
 
@@ -38,7 +42,14 @@ class QrWidget : GlanceAppWidget() {
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(ImageProvider(createTransparentBitmap())) // Use transparent background
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .clickable(
+                        onClick = actionStartActivity(
+                            Intent(context, ConfigActivity::class.java).apply {
+                                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                            }
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 val dataIsNotBlank = config.data.any {
