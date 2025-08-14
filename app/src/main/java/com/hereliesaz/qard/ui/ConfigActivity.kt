@@ -39,7 +39,7 @@ import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.R
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.SocialLink
-import com.hereliesaz.qard.ui.theme.QrLockscreenTheme
+import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
@@ -69,7 +69,7 @@ class ConfigActivity : ComponentActivity() {
         }
 
         setContent {
-            QrLockscreenTheme {
+            QaRdTheme {
                 ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) {
                     // This lambda is called when configuration is complete
                     val resultValue =
@@ -425,8 +425,16 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     Card(
                         onClick = { config = savedConfig },
                     ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             QrCodePreview(config = savedConfig)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(savedConfig.creationDate)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
                         }
                     }
                 }
