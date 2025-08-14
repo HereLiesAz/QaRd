@@ -1,20 +1,13 @@
 package com.hereliesaz.qard.widget
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Shader
-import androidx.core.graphics.createBitmap
+import android.graphics.*
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.QrConfig
-import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.widget.shape.DiamondShapeFunction
 import qrcode.QRCode
+import com.hereliesaz.qard.data.QrData
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -41,15 +34,16 @@ object QrGenerator {
                 QrShape.RoundSquare -> QRCode.ofRoundedSquares()
                 QrShape.Square -> QRCode.ofSquares()
                 QrShape.Diamond -> QRCode.ofCustomShape(DiamondShapeFunction())
+                else -> QRCode.ofSquares()
             }
 
             val qrCodeBuilderWithColor = when (config.foregroundType) {
                 ForegroundType.SOLID -> qrCodeBuilder.withColor(config.foregroundColor)
-                // FIX 1: Use getOrElse for safe access to prevent IndexOutOfBoundsException
                 ForegroundType.GRADIENT -> qrCodeBuilder.withGradientColor(
-                    config.foregroundGradientColors.getOrElse(0) { Color.BLACK },
-                    config.foregroundGradientColors.getOrElse(1) { Color.BLUE }
+                    config.foregroundGradientColors[0],
+                    config.foregroundGradientColors[1]
                 )
+                else -> qrCodeBuilder.withColor(config.foregroundColor)
             }
 
             val qrCode = qrCodeBuilderWithColor
@@ -62,8 +56,7 @@ object QrGenerator {
             // Add a margin to the QR code
             val margin = (qrBitmap.width * 0.1f).toInt()
             val newSize = qrBitmap.width + margin * 2
-            val borderedBitmap =
-                createBitmap(newSize, newSize, qrBitmap.config ?: Bitmap.Config.ARGB_8888)
+            val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config ?: Bitmap.Config.ARGB_8888)
 
             val canvas = Canvas(borderedBitmap)
 
@@ -75,17 +68,11 @@ object QrGenerator {
                 val alpha = (config.backgroundAlpha * 255).toInt()
                 canvas.drawColor(Color.argb(alpha, red, green, blue))
             } else {
-                // FIX 2: Correctly calculate gradient start/end points to span the whole bitmap
                 val paint = Paint()
-                val centerX = newSize / 2f
-                val centerY = newSize / 2f
-                val radius = newSize / 2f
                 val angleInRadians = Math.toRadians(config.backgroundGradientAngle.toDouble())
-
-                val startX = centerX - radius * cos(angleInRadians).toFloat()
-                val startY = centerY - radius * sin(angleInRadians).toFloat()
-                val endX = centerX + radius * cos(angleInRadians).toFloat()
-                val endY = centerY + radius * sin(angleInRadians).toFloat()
+                // Calculate end point of the gradient line based on angle
+                val x1 = newSize * cos(angleInRadians).toFloat()
+                val y1 = newSize * sin(angleInRadians).toFloat()
 
                 val colorsWithAlpha = config.backgroundGradientColors.map {
                     val red = Color.red(it)
@@ -96,10 +83,10 @@ object QrGenerator {
                 }.toIntArray()
 
                 val shader = LinearGradient(
-                    startX,
-                    startY,
-                    endX,
-                    endY,
+                    0f,
+                    0f,
+                    x1,
+                    y1,
                     colorsWithAlpha,
                     null,
                     Shader.TileMode.CLAMP

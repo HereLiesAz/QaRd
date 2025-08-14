@@ -8,17 +8,9 @@ import com.hereliesaz.qard.widget.QrWidget
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
-import android.appwidget.AppWidgetManager
-import android.util.Log
-
 class QrWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = QrWidget()
     private val coroutineScope = MainScope()
-
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        Log.d("WidgetFlow", "QrWidgetReceiver.onUpdate called")
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-    }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
