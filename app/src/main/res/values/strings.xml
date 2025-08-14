@@ -6,4 +6,6 @@
     <string name="save_widget_button">Create Widget</string>
     <string name="qard">Qard</string>
     <string name="tap_to_unlock">Tap to unlock</string>
+    <string name="qr_code_image_description">QR Code</string>
+    <string name="widget_placeholder_text">Configure to show QR code</string>
 </resources>
