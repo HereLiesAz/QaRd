@@ -425,8 +425,16 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     Card(
                         onClick = { config = savedConfig },
                     ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             QrCodePreview(config = savedConfig)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(savedConfig.creationDate)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
                         }
                     }
                 }
