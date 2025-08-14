@@ -42,6 +42,7 @@ import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
+import com.hereliesaz.qard.widget.QrWidgetReceiver
 import com.materialkolor.DynamicMaterialTheme
 import android.util.Log
 import kotlinx.coroutines.flow.first
@@ -454,9 +455,14 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                             dataStore.saveConfigs(newSaved)
 
                             dataStore.saveConfig(appWidgetId, currentConfig)
-                            val glanceId =
-                                GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                            qrWidget.update(context, glanceId)
+
+                            // It is important to update the widget to reflect the new configuration
+                            val intent = Intent(context, QrWidgetReceiver::class.java).apply {
+                                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
+                            }
+                            context.sendBroadcast(intent)
+
                             onConfigComplete()
                         }
                     },
