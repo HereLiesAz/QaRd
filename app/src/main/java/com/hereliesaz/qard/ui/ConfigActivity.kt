@@ -39,7 +39,7 @@ import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.R
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.SocialLink
-import com.hereliesaz.qard.ui.theme.QrLockscreenTheme
+import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
@@ -69,7 +69,7 @@ class ConfigActivity : ComponentActivity() {
         }
 
         setContent {
-            QrLockscreenTheme {
+            QaRdTheme {
                 ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) {
                     // This lambda is called when configuration is complete
                     val resultValue =
@@ -173,8 +173,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Image(
-                painter = painterResource(id = com.hereliesaz.qard.R.drawable.ic_launcher),
-
+                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                 contentDescription = "App Icon",
                 modifier = Modifier.size(64.dp)
             )
@@ -454,9 +453,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                             dataStore.saveConfigs(newSaved)
 
                             dataStore.saveConfig(appWidgetId, currentConfig)
-                            val glanceId =
-                                GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                            qrWidget.update(context, glanceId)
+                            QrWidget().updateAll(context)
                             onConfigComplete()
                         }
                     },
