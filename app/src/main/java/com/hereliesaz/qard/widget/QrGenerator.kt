@@ -1,13 +1,20 @@
 package com.hereliesaz.qard.widget
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
+import androidx.core.graphics.createBitmap
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.QrConfig
+import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.widget.shape.DiamondShapeFunction
 import qrcode.QRCode
-import com.hereliesaz.qard.data.QrData
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -34,7 +41,6 @@ object QrGenerator {
                 QrShape.RoundSquare -> QRCode.ofRoundedSquares()
                 QrShape.Square -> QRCode.ofSquares()
                 QrShape.Diamond -> QRCode.ofCustomShape(DiamondShapeFunction())
-                else -> QRCode.ofSquares()
             }
 
             val qrCodeBuilderWithColor = when (config.foregroundType) {
@@ -43,7 +49,6 @@ object QrGenerator {
                     config.foregroundGradientColors[0],
                     config.foregroundGradientColors[1]
                 )
-                else -> qrCodeBuilder.withColor(config.foregroundColor)
             }
 
             val qrCode = qrCodeBuilderWithColor
@@ -56,7 +61,8 @@ object QrGenerator {
             // Add a margin to the QR code
             val margin = (qrBitmap.width * 0.1f).toInt()
             val newSize = qrBitmap.width + margin * 2
-            val borderedBitmap = Bitmap.createBitmap(newSize, newSize, qrBitmap.config ?: Bitmap.Config.ARGB_8888)
+            val borderedBitmap =
+                createBitmap(newSize, newSize, qrBitmap.config ?: Bitmap.Config.ARGB_8888)
 
             val canvas = Canvas(borderedBitmap)
 
