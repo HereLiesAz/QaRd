@@ -21,8 +21,10 @@ import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
-import com.hereliesaz.qard.widget.QrWidgetReceiver
+import com.hereliesaz.qard.ui.ConfigActivity
 import kotlinx.coroutines.flow.first
+import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.layout.clickable
 
 class QrWidget : GlanceAppWidget() {
 
@@ -34,11 +36,18 @@ class QrWidget : GlanceAppWidget() {
         Log.d("WidgetFlow", "Config received in widget: $config")
 
         provideContent {
+            val intent = Intent(context, ConfigActivity::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent = PendingIntent.getActivity(context, appWidgetId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(ImageProvider(createTransparentBitmap())) // Use transparent background
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .clickable(onClick = pendingIntent),
                 contentAlignment = Alignment.Center
             ) {
                 val dataIsNotBlank = config.data.any {

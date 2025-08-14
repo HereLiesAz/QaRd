@@ -1,9 +1,11 @@
 <resources>
-    <string name="app_name">QR Lockscreen</string>
+    <string name="app_name">QaRd</string>
     <string name="appwidget_description">A widget that displays a user-defined QR code.</string>
     <string name="configure_widget_title">Configure QR Code</string>
     <string name="qr_code_data_label">QR Code Data</string>
     <string name="save_widget_button">Create Widget</string>
     <string name="qard">Qard</string>
     <string name="tap_to_unlock">Tap to unlock</string>
+    <string name="qr_code_image_description">QR Code</string>
+    <string name="widget_placeholder_text">Configure to show QR code</string>
 </resources>
