@@ -1,12 +1,13 @@
 package com.hereliesaz.qard.widget
 
-import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import android.util.Log
 import androidx.compose.ui.unit.dp
+import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.first
 
 class QrWidget : GlanceAppWidget() {
 
+    @OptIn(ExperimentalGlanceApi::class)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val dataStore = QrDataStore(context)
         val appWidgetId = getAppWidgetId(context, id)
@@ -37,23 +39,18 @@ class QrWidget : GlanceAppWidget() {
         Log.d("WidgetFlow", "Config received in widget: $config")
 
         provideContent {
-            val intent = Intent(context, ConfigActivity::class.java).apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            val intent = Intent(context, ConfigActivity::class.java)
+            val activityOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+            } else {
+                null
             }
-            val pendingIntent: PendingIntent? = PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(ImageProvider(createTransparentBitmap())) // Use transparent background
                     .padding(8.dp)
-                    .clickable(onClick = actionStartActivity(intent)),
+                    .clickable(actionStartActivity(intent, activityOptions = activityOptions?.toBundle())),
                 contentAlignment = Alignment.Center
             ) {
                 val dataIsNotBlank = config.data.any {
