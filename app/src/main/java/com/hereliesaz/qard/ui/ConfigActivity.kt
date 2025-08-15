@@ -44,6 +44,7 @@ import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
 import com.materialkolor.DynamicMaterialTheme
 import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -70,12 +71,23 @@ class ConfigActivity : ComponentActivity() {
 
         setContent {
             QaRdTheme {
-                ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) {
-                    // This lambda is called when configuration is complete
-                    val resultValue =
-                        Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                    setResult(Activity.RESULT_OK, resultValue)
-                    finish()
+                ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) { config ->
+                    lifecycleScope.launch {
+                        val dataStore = QrDataStore(this@ConfigActivity)
+
+                        val currentSaved = dataStore.getSavedConfigs().first()
+                        val newSaved = (currentSaved + config).distinct()
+                        dataStore.saveConfigs(newSaved)
+
+                        dataStore.saveConfig(appWidgetId, config)
+
+                        val glanceId = GlanceAppWidgetManager(this@ConfigActivity).getGlanceIdBy(appWidgetId)
+                        qrWidget.update(this@ConfigActivity, glanceId)
+
+                        val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                        setResult(Activity.RESULT_OK, resultValue)
+                        finish()
+                    }
                 }
             }
         }
@@ -108,9 +120,8 @@ private fun generateRandomPresets(): List<QrConfig> {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> Unit) {
+fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onSave: (QrConfig) -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val dataStore = remember { QrDataStore(context) }
 
     var config by remember { mutableStateOf<QrConfig?>(null) }
@@ -446,19 +457,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 }
                 Button(
                     onClick = {
-                        scope.launch {
-                            Log.d("WidgetFlow", "Saving config for widget ID: $appWidgetId")
-                            Log.d("WidgetFlow", "Config data: $currentConfig")
-                            val currentSaved = dataStore.getSavedConfigs().first()
-                            val newSaved = (currentSaved + currentConfig).distinct()
-                            dataStore.saveConfigs(newSaved)
-
-                            dataStore.saveConfig(appWidgetId, currentConfig)
-                            val glanceId =
-                                GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                            qrWidget.update(context, glanceId)
-                            onConfigComplete()
-                        }
+                        onSave(currentConfig)
                     },
                     enabled = currentConfig.data.any {
                         when (it) {
