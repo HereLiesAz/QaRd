@@ -117,9 +117,6 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
 
     val updateConfig = { newConfig: QrConfig ->
         config = newConfig
-        scope.launch {
-            dataStore.saveConfig(appWidgetId, newConfig)
-        }
     }
     var showForegroundColorPicker by remember { mutableStateOf(false) }
     var showBackgroundColorPicker by remember { mutableStateOf(false) }
