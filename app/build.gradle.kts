@@ -44,7 +44,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.13"
+        kotlinCompilerExtensionVersion = "1.6.11"
     }
     packaging {
         resources {
@@ -80,11 +80,13 @@ dependencies {
     implementation(libs.qrcode.kotlin.android)
 
     // Color Picker
-    implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
+    implementation(libs.compose.color.picker)
 
     // Material Kolor for palette generation
-    implementation("com.materialkolor:material-kolor:3.0.0")
+    implementation(libs.material.kolor)
 
+    // Menu
+    implementation(libs.aznavrail)
 
     // Testing
     testImplementation(libs.junit)

@@ -1,20 +1,23 @@
 [versions]
 androidApplication = "8.12.0"
-kotlin = "2.2.0"
-coreKtx = "1.16.0"
-kotlinxSerializationJson = "1.9.0"
+aznavrail = "1.0"
+composeColorPicker = "0.7.0"
+kotlin = "2.2.10"
+coreKtx = "1.17.0"
+kotlinxSerializationJson = "1.9.23"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.10.1"
-composeBom = "2025.07.00"
+composeBom = "2025.08.00"
 glance = "1.1.1"
 datastore = "1.1.7"
 junit = "4.13.2"
 androidxJunit = "1.3.0"
 espressoCore = "3.7.0"
 kotlinSerializationPlugin = "1.9.23"
+materialKolor = "3.0.1"
 qrcodeKotlinAndroid = "4.5.0"
 appcompat = "1.7.1" # Added appcompat version
-constraintlayout = "2.1.4" # Add this line for ConstraintLayout version
+constraintlayout = "2.2.1" # Add this line for ConstraintLayout version
 
 [libraries]
 # Core & UI
@@ -38,6 +41,8 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastore" }
 
 # Testing
+aznavrail = { module = "com.github.hereliesaz:AzNavRail", version.ref = "aznavrail" }
+compose-color-picker = { module = "com.godaddy.android.colorpicker:compose-color-picker", version.ref = "composeColorPicker" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -45,6 +50,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 qrcode-kotlin-android = { module = "io.github.g0dkar:qrcode-kotlin-android", version.ref = "qrcodeKotlinAndroid" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" } # Add this line for the ConstraintLayout library
 
