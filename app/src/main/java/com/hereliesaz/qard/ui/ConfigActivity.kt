@@ -462,6 +462,8 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 Button(
                     onClick = {
                         scope.launch {
+                dataStore.saveConfig(appWidgetId, currentConfig)
+
                             val currentSaved = dataStore.getSavedConfigs().first()
                             val newSaved = (currentSaved + currentConfig).distinct()
                             dataStore.saveConfigs(newSaved)
