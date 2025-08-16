@@ -4,24 +4,13 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -32,33 +21,8 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.MultiChoiceSegmentedButtonRow
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -70,17 +34,17 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
+import com.hereliesaz.qard.data.*
 import com.hereliesaz.qard.data.BackgroundType
+import com.hereliesaz.qard.R
 import com.hereliesaz.qard.data.ForegroundType
-import com.hereliesaz.qard.data.QrConfig
-import com.hereliesaz.qard.data.QrData
-import com.hereliesaz.qard.data.QrDataStore
-import com.hereliesaz.qard.data.QrDataType
-import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrWidget
+import com.materialkolor.DynamicMaterialTheme
+import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -107,6 +71,23 @@ class ConfigActivity : ComponentActivity() {
 
         setContent {
             QaRdTheme {
+                ConfigScreen(appWidgetId = appWidgetId, qrWidget = qrWidget) { config ->
+                    lifecycleScope.launch {
+                        val dataStore = QrDataStore(this@ConfigActivity)
+
+                        val currentSaved = dataStore.getSavedConfigs().first()
+                        val newSaved = (currentSaved + config).distinct()
+                        dataStore.saveConfigs(newSaved)
+
+                        dataStore.saveConfig(appWidgetId, config)
+
+                        val glanceId = GlanceAppWidgetManager(this@ConfigActivity).getGlanceIdBy(appWidgetId)
+                        qrWidget.update(this@ConfigActivity, glanceId)
+
+                        val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                        setResult(Activity.RESULT_OK, resultValue)
+                        finish()
+                    }
                 ConfigScreen(appWidgetId = appWidgetId) {
                     val resultValue =
                         Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -144,9 +125,8 @@ private suspend fun generateRandomPresets(): List<QrConfig> = withContext(Dispat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
+fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val dataStore = remember { QrDataStore(context) }
 
     var config by remember { mutableStateOf<QrConfig?>(null) }
@@ -506,6 +486,7 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                             )
                             onConfigComplete()
                         }
+                        onSave(currentConfig)
                     },
                     enabled = currentConfig.data.any {
                         when (it) {
@@ -794,3 +775,4 @@ fun QrCodePreview(config: QrConfig) {
         }
     }
 }
+    }
