@@ -114,12 +114,21 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
     val dataStore = remember { QrDataStore(context) }
 
     var config by remember { mutableStateOf<QrConfig?>(null) }
+
+    val updateConfig = { newConfig: QrConfig ->
+        config = newConfig
+        scope.launch {
+            dataStore.saveConfig(appWidgetId, newConfig)
+        }
+    }
     var showForegroundColorPicker by remember { mutableStateOf(false) }
     var showBackgroundColorPicker by remember { mutableStateOf(false) }
     var showGradientColorPicker1 by remember { mutableStateOf(false) }
     var showGradientColorPicker2 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker1 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker2 by remember { mutableStateOf(false) }
+    var isSaveEnabled by remember { mutableStateOf(false) }
+    var showPreview by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState()
     var isSheetOpen by remember { mutableStateOf(false) }
@@ -221,7 +230,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                             }
                                         }
                                     }
-                                    config = currentConfig.copy(data = currentData)
+                                    updateConfig(currentConfig.copy(data = currentData))
                                 },
                                 checked = type in selectedTypes
                             ) {
@@ -237,7 +246,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                 val index = newDataList.indexOf(data)
                                 if (index != -1) {
                                     newDataList[index] = newLinks
-                                    config = currentConfig.copy(data = newDataList)
+                                    updateConfig(currentConfig.copy(data = newDataList))
                                 }
                             }
                             is QrData.Contact -> ContactForm(contact = data) { newContact ->
@@ -245,7 +254,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                 val index = newDataList.indexOf(data)
                                 if (index != -1) {
                                     newDataList[index] = newContact
-                                    config = currentConfig.copy(data = newDataList)
+                                    updateConfig(currentConfig.copy(data = newDataList))
                                 }
                             }
                             is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
@@ -253,7 +262,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                 val index = newDataList.indexOf(data)
                                 if (index != -1) {
                                     newDataList[index] = newSocialMedia
-                                    config = currentConfig.copy(data = newDataList)
+                                    updateConfig(currentConfig.copy(data = newDataList))
                                 }
                             }
                         }
@@ -262,7 +271,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                     Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
                     Slider(
                         value = currentConfig.backgroundAlpha,
-                        onValueChange = { config = currentConfig.copy(backgroundAlpha = it) },
+                        onValueChange = { updateConfig(currentConfig.copy(backgroundAlpha = it)) },
                         valueRange = 0f..1f
                     )
                 }
@@ -281,7 +290,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         BackgroundType.values().forEachIndexed { index, backgroundType ->
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
-                                onClick = { config = currentConfig.copy(backgroundType = backgroundType) },
+                                onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
                                 selected = currentConfig.backgroundType == backgroundType
                             ) {
                                 Text(backgroundType.name)
@@ -297,7 +306,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         items(items = QrShape.values()) { shape ->
                             val isSelected = currentConfig.shape == shape
                             Card(
-                                onClick = { config = currentConfig.copy(shape = shape) },
+                                onClick = { updateConfig(currentConfig.copy(shape = shape)) },
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                                 ),
@@ -329,7 +338,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                         ForegroundType.values().forEachIndexed { index, foregroundType ->
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
-                                onClick = { config = currentConfig.copy(foregroundType = foregroundType) },
+                                onClick = { updateConfig(currentConfig.copy(foregroundType = foregroundType)) },
                                 selected = currentConfig.foregroundType == foregroundType
                             ) {
                                 Text(foregroundType.name)
@@ -384,7 +393,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                                 Text("Gradient Angle: ${currentConfig.backgroundGradientAngle.toInt()}°", style = MaterialTheme.typography.bodyLarge)
                                 Slider(
                                     value = currentConfig.backgroundGradientAngle,
-                                    onValueChange = { config = currentConfig.copy(backgroundGradientAngle = it) },
+                                    onValueChange = { updateConfig(currentConfig.copy(backgroundGradientAngle = it)) },
                                     valueRange = 0f..360f,
                                     steps = 35
                                 )
@@ -401,7 +410,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             ) {
                 items(items = presets) { preset ->
                     Card(
-                        onClick = { config = preset.copy(data = currentConfig.data) },
+                        onClick = { updateConfig(preset.copy(data = currentConfig.data)) },
                     ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = preset)
@@ -423,7 +432,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             ) {
                 items(items = savedConfigs) { savedConfig ->
                     Card(
-                        onClick = { config = savedConfig },
+                        onClick = { updateConfig(savedConfig) },
                     ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = savedConfig)
@@ -439,7 +448,13 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedButton(
-                    onClick = { isSheetOpen = true },
+                    onClick = {
+                        isSheetOpen = true
+                        scope.launch {
+                            dataStore.saveConfig(appWidgetId, currentConfig)
+                        }
+                        isSaveEnabled = true
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Show Preview")
@@ -447,20 +462,17 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
                 Button(
                     onClick = {
                         scope.launch {
-                            Log.d("WidgetFlow", "Saving config for widget ID: $appWidgetId")
-                            Log.d("WidgetFlow", "Config data: $currentConfig")
                             val currentSaved = dataStore.getSavedConfigs().first()
                             val newSaved = (currentSaved + currentConfig).distinct()
                             dataStore.saveConfigs(newSaved)
 
-                            dataStore.saveConfig(appWidgetId, currentConfig)
                             val glanceId =
                                 GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
                             qrWidget.update(context, glanceId)
                             onConfigComplete()
                         }
                     },
-                    enabled = currentConfig.data.any {
+                    enabled = isSaveEnabled && currentConfig.data.any {
                         when (it) {
                             is QrData.Links -> it.links.any { link -> link.isNotBlank() }
                             is QrData.Contact -> it.name.isNotBlank()
@@ -479,7 +491,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
         ColorPickerDialog(
             initialColor = currentConfig.foregroundColor,
             onColorSelected = {
-                config = currentConfig.copy(foregroundColor = it)
+                updateConfig(currentConfig.copy(foregroundColor = it))
                 showForegroundColorPicker = false
             },
             onDismiss = { showForegroundColorPicker = false }
@@ -491,7 +503,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             initialColor = currentConfig.backgroundColor,
             showAlphaBar = true,
             onColorSelected = {
-                config = currentConfig.copy(backgroundColor = it)
+                updateConfig(currentConfig.copy(backgroundColor = it))
                 showBackgroundColorPicker = false
             },
             onDismiss = { showBackgroundColorPicker = false }
@@ -505,7 +517,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             onColorSelected = {
                 val newColors = currentConfig.backgroundGradientColors.toMutableList()
                 newColors[0] = it
-                config = currentConfig.copy(backgroundGradientColors = newColors)
+                updateConfig(currentConfig.copy(backgroundGradientColors = newColors))
                 showGradientColorPicker1 = false
             },
             onDismiss = { showGradientColorPicker1 = false }
@@ -519,7 +531,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             onColorSelected = {
                 val newColors = currentConfig.backgroundGradientColors.toMutableList()
                 newColors[1] = it
-                config = currentConfig.copy(backgroundGradientColors = newColors)
+                updateConfig(currentConfig.copy(backgroundGradientColors = newColors))
                 showGradientColorPicker2 = false
             },
             onDismiss = { showGradientColorPicker2 = false }
@@ -533,7 +545,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             onColorSelected = {
                 val newColors = currentConfig.foregroundGradientColors.toMutableList()
                 newColors[0] = it
-                config = currentConfig.copy(foregroundGradientColors = newColors)
+                updateConfig(currentConfig.copy(foregroundGradientColors = newColors))
                 showFgGradientColorPicker1 = false
             },
             onDismiss = { showFgGradientColorPicker1 = false }
@@ -547,7 +559,7 @@ fun ConfigScreen(appWidgetId: Int, qrWidget: QrWidget, onConfigComplete: () -> U
             onColorSelected = {
                 val newColors = currentConfig.foregroundGradientColors.toMutableList()
                 newColors[1] = it
-                config = currentConfig.copy(foregroundGradientColors = newColors)
+                updateConfig(currentConfig.copy(foregroundGradientColors = newColors))
                 showFgGradientColorPicker2 = false
             },
             onDismiss = { showFgGradientColorPicker2 = false }
