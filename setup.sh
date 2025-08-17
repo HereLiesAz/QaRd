@@ -22,7 +22,8 @@ wget -q "$TOOLS_URL" -O "$TOOLS_ZIP"
 
 # Unzip and restructure the directory
 # The zip file contains a single 'cmdline-tools' folder. We unzip it and rename it to 'latest'.
-unzip -q "$TOOLS_ZIP" -d "$ANDROID_SDK_ROOT/cmdline-tools"
+rm -rf "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+unzip -oq "$TOOLS_ZIP" -d "$ANDROID_SDK_ROOT/cmdline-tools"
 mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
 rm "$TOOLS_ZIP"
 
