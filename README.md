@@ -30,16 +30,6 @@ Share your contact info, files, or social media with a QR code widget. A simple 
 *   **Simple and Lightweight:** The app is easy to use. No unnecessary permissions. Just a focus on doing one thing well.
 *   **Multiple Widgets:** Need more than one QaRd? You just effin' do it, and BAM! Plural effin' QR codes. Put bunches of QaRds on your screen, you clever you.
 
-## Screenshots
-
-*To be added: Please provide screenshots of the widget in action.*
-
-**1. Configuration Screen:**
-*(A screenshot showing the configuration screen with the text input field, shape selector, and color pickers.)*
-
-**2. Widget on Home Screen:**
-*(A screenshot of the generated QR code widget displayed on an Android home screen.)*
-
 ## Installation
 
 ### From Source
