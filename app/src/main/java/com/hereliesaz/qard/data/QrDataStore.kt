@@ -25,6 +25,7 @@ class QrDataStore(private val context: Context) {
         return context.dataStore.data
             .map { preferences ->
                 val jsonString = preferences[key]
+                Log.d("QrDataStore", "Loading config for widget $appWidgetId: $jsonString")
                 if (jsonString != null) {
                     try {
                         Json.decodeFromString<QrConfig>(jsonString)
@@ -44,7 +45,9 @@ class QrDataStore(private val context: Context) {
     suspend fun saveConfig(appWidgetId: Int, config: QrConfig) {
         val key = qrConfigKey(appWidgetId)
         context.dataStore.edit { preferences ->
-            preferences[key] = Json.encodeToString(config)
+            val jsonString = Json.encodeToString(config)
+            Log.d("QrDataStore", "Saving config for widget $appWidgetId: $jsonString")
+            preferences[key] = jsonString
         }
     }
 
