@@ -66,7 +66,9 @@ append_if_missing 'export PATH=$JAVA_HOME/bin:$PATH' "$RC_FILE"
 # --- 4. Accept SDK Licenses ---
 echo "➡️ Accepting Android SDK licenses..."
 export ANDROID_SDK_ROOT="$HOME/Android/sdk"
-yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
+# The sdkmanager may exit with a non-zero status code even if licenses are accepted,
+# due to warnings. We use || true to prevent the script from exiting.
+yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
 
 echo "✅ Setup complete!"
