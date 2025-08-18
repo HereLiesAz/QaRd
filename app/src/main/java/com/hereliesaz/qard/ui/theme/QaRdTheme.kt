@@ -2,6 +2,7 @@ package com.hereliesaz.qard.ui.theme
 
 import android.app.Activity
 import android.os.Build
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -57,8 +58,16 @@ fun QaRdTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            (view.context as? androidx.activity.ComponentActivity)?.enableEdgeToEdge(
+                statusBarStyle = androidx.activity.SystemBarStyle.auto(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT,
+                ) { darkTheme },
+                navigationBarStyle = androidx.activity.SystemBarStyle.auto(
+                    lightScrim = colorScheme.primary.toArgb(),
+                    darkScrim = colorScheme.primary.toArgb(),
+                ) { darkTheme },
+            )
         }
     }
 

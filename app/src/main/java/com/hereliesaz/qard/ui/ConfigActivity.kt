@@ -359,7 +359,6 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                                             QrShape.Circle -> Icons.Default.Circle
                                             QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
                                             QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
-                                            else -> Icons.Default.CropSquare
                                         },
                                         contentDescription = shape.name,
                                         modifier = Modifier.size(48.dp)
