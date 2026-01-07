@@ -1,6 +1,6 @@
 [versions]
 androidApplication = "8.12.0"
-aznavrail = "1.0"
+aznavrail = "1.8"
 composeColorPicker = "0.7.0"
 kotlin = "2.2.10"
 coreKtx = "1.17.0"
@@ -17,6 +17,7 @@ materialKolor = "3.0.1"
 qrcodeKotlinAndroid = "4.5.0"
 appcompat = "1.7.1" # Added appcompat version
 constraintlayout = "2.2.1" # Add this line for ConstraintLayout version
+navigationCompose = "2.9.3"
 
 [libraries]
 # Core & UI
@@ -30,6 +31,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" } # Added appcompat library
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 # Glance
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }

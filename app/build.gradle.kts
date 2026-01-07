@@ -85,6 +85,9 @@ dependencies {
     // Material Kolor for palette generation
     implementation(libs.material.kolor)
 
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
     // Menu
     implementation(libs.aznavrail)
 

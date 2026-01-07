@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -45,6 +47,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -68,8 +71,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
+import com.hereliesaz.aznavrail.AzNavRail
+import com.hereliesaz.aznavrail.AzNavRailItem
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.QrConfig
@@ -207,147 +215,60 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
         }
     }
 
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-    ) {
-        Column(
+    val navController = rememberNavController()
+    var selectedItem by remember { mutableStateOf(0) }
+
+    Scaffold { paddingValues ->
+        Row(
             modifier = Modifier
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Image(
-                painter = painterResource(id = com.hereliesaz.qard.R.drawable.ic_launcher),
-
-                contentDescription = "App Icon",
-                modifier = Modifier.size(64.dp)
-            )
-
-            // Data Section
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text("Data", style = MaterialTheme.typography.headlineMedium)
-
-                    val selectedTypes = remember(currentConfig.data) {
-                        currentConfig.data.map {
-                            when (it) {
-                                is QrData.Links -> QrDataType.Links
-                                is QrData.Contact -> QrDataType.Contact
-                                is QrData.SocialMedia -> QrDataType.SocialMedia
-                            }
-                        }
-                    }
-
-                    MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        QrDataType.values().forEachIndexed { index, type ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = QrDataType.values().size),
-                                onCheckedChange = { isChecked ->
-                                    val currentData = currentConfig.data.toMutableList()
-                                    if (isChecked) {
-                                        if (selectedTypes.none { it == type }) {
-                                            val newData = when (type) {
-                                                QrDataType.Links -> QrData.Links(links = listOf(""))
-                                                QrDataType.Contact -> QrData.Contact()
-                                                QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("","")))
-                                            }
-                                            currentData.add(newData)
-                                        }
-                                    } else {
-                                        currentData.removeAll {
-                                            when(it) {
-                                                is QrData.Links -> type == QrDataType.Links
-                                                is QrData.Contact -> type == QrDataType.Contact
-                                                is QrData.SocialMedia -> type == QrDataType.SocialMedia
-                                            }
-                                        }
-                                    }
-                                    updateConfig(currentConfig.copy(data = currentData))
-                                },
-                                checked = type in selectedTypes
-                            ) {
-                                Text(type.name)
-                            }
-                        }
-                    }
-
-                    currentConfig.data.forEach { data ->
-                        when (data) {
-                            is QrData.Links -> LinksForm(links = data) { newLinks ->
-                                val newDataList = currentConfig.data.toMutableList()
-                                val index = newDataList.indexOf(data)
-                                if (index != -1) {
-                                    newDataList[index] = newLinks
-                                    updateConfig(currentConfig.copy(data = newDataList))
-                                }
-                            }
-                            is QrData.Contact -> ContactForm(contact = data) { newContact ->
-                                val newDataList = currentConfig.data.toMutableList()
-                                val index = newDataList.indexOf(data)
-                                if (index != -1) {
-                                    newDataList[index] = newContact
-                                    updateConfig(currentConfig.copy(data = newDataList))
-                                }
-                            }
-                            is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
-                                val newDataList = currentConfig.data.toMutableList()
-                                val index = newDataList.indexOf(data)
-                                if (index != -1) {
-                                    newDataList[index] = newSocialMedia
-                                    updateConfig(currentConfig.copy(data = newDataList))
-                                }
-                            }
-                        }
-                    }
-
-                    Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
-                    Slider(
-                        value = currentConfig.backgroundAlpha,
-                        onValueChange = { updateConfig(currentConfig.copy(backgroundAlpha = it)) },
-                        valueRange = 0f..1f
-                    )
+            AzNavRail(
+                selectedItem = selectedItem,
+                onSelectItem = {
+                    selectedItem = it
+                    navController.navigate(if (it == 0) "data" else "appearance")
                 }
+            ) {
+                AzNavRailItem(icon = { Icon(Icons.Default.Person, "Data") }, label = { Text("Data") })
+                AzNavRailItem(icon = { Icon(Icons.Default.Settings, "Appearance") }, label = { Text("Appearance") })
             }
 
-            // Appearance Section
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                NavHost(
+                    navController = navController,
+                    startDestination = "data",
                 ) {
-                    Text("Appearance", style = MaterialTheme.typography.headlineMedium)
-
-                    Text("Background Type", style = MaterialTheme.typography.bodyLarge)
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        BackgroundType.values().forEachIndexed { index, backgroundType ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
-                                onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
-                                selected = currentConfig.backgroundType == backgroundType
-                            ) {
-                                Text(backgroundType.name)
-                            }
-                        }
+                    composable("data") {
+                        DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
                     }
+                    composable("appearance") {
+                        AppearanceScreen(
+                            currentConfig = currentConfig,
+                            updateConfig = updateConfig,
+                            showForegroundColorPicker = { showForegroundColorPicker = true },
+                            showBackgroundColorPicker = { showBackgroundColorPicker = true },
+                            showGradientColorPicker1 = { showGradientColorPicker1 = true },
+                            showGradientColorPicker2 = { showGradientColorPicker2 = true },
+                            showFgGradientColorPicker1 = { showFgGradientColorPicker1 = true },
+                            showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
+                        )
+                    }
+                }
 
-                    Text("Shape", style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Presets, Saved, and Bottom buttons
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Presets", style = MaterialTheme.typography.headlineMedium)
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(items = QrShape.values()) { shape ->
-                            val isSelected = currentConfig.shape == shape
+                        items(items = presets) { preset ->
                             Card(
-                                onClick = { updateConfig(currentConfig.copy(shape = shape)) },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                                border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                                onClick = { updateConfig(preset.copy(data = currentConfig.data)) },
                             ) {
                                 Column(
                                     modifier = Modifier.padding(16.dp),
@@ -364,167 +285,83 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                                         modifier = Modifier.size(48.dp)
                                     )
                                     Text(shape.name, style = MaterialTheme.typography.labelSmall)
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    QrCodePreview(config = preset)
                                 }
                             }
                         }
                     }
 
-                    Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        ForegroundType.values().forEachIndexed { index, foregroundType ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
-                                onClick = { updateConfig(currentConfig.copy(foregroundType = foregroundType)) },
-                                selected = currentConfig.foregroundType == foregroundType
+                    Text("Saved", style = MaterialTheme.typography.headlineMedium)
+                    var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
+                    LaunchedEffect(key1 = Unit) {
+                        dataStore.getSavedConfigs().collect {
+                            savedConfigs = it
+                        }
+                    }
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(items = savedConfigs) { savedConfig ->
+                            Card(
+                                onClick = { updateConfig(savedConfig) },
                             ) {
-                                Text(foregroundType.name)
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    QrCodePreview(config = savedConfig)
+                                }
                             }
                         }
                     }
 
-                    when (currentConfig.foregroundType) {
-                        ForegroundType.SOLID -> {
-                            ColorPickerField(
-                                label = "Foreground Color",
-                                color = currentConfig.foregroundColor,
-                                onClick = { showForegroundColorPicker = true }
-                            )
-                        }
-                        ForegroundType.GRADIENT -> {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ColorPickerField(
-                                    label = "Foreground Gradient Color 1",
-                                    color = currentConfig.foregroundGradientColors.getOrElse(0) { 0xFF000000.toInt() },
-                                    onClick = { showFgGradientColorPicker1 = true }
-                                )
-                                ColorPickerField(
-                                    label = "Foreground Gradient Color 2",
-                                    color = currentConfig.foregroundGradientColors.getOrElse(1) { 0xFF0000FF.toInt() },
-                                    onClick = { showFgGradientColorPicker2 = true }
-                                )
-                            }
-                        }
-                    }
-
-                    when (currentConfig.backgroundType) {
-                        BackgroundType.SOLID -> {
-                            ColorPickerField(
-                                label = "Background Color",
-                                color = currentConfig.backgroundColor,
-                                onClick = { showBackgroundColorPicker = true }
-                            )
-                        }
-                        BackgroundType.GRADIENT -> {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ColorPickerField(
-                                    label = "Gradient Color 1",
-                                    color = currentConfig.backgroundGradientColors.getOrElse(0) { 0xFFFFFFFF.toInt() },
-                                    onClick = { showGradientColorPicker1 = true }
-                                )
-                                ColorPickerField(
-                                    label = "Gradient Color 2",
-                                    color = currentConfig.backgroundGradientColors.getOrElse(1) { 0xFF000000.toInt() },
-                                    onClick = { showGradientColorPicker2 = true }
-                                )
-                                Text("Gradient Angle: ${currentConfig.backgroundGradientAngle.toInt()}°", style = MaterialTheme.typography.bodyLarge)
-                                Slider(
-                                    value = currentConfig.backgroundGradientAngle,
-                                    onValueChange = { updateConfig(currentConfig.copy(backgroundGradientAngle = it)) },
-                                    valueRange = 0f..360f,
-                                    steps = 35
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Text("Presets", style = MaterialTheme.typography.headlineMedium)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(items = presets) { preset ->
-                    Card(
-                        onClick = { updateConfig(preset.copy(data = currentConfig.data)) },
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            QrCodePreview(config = preset)
+                        OutlinedButton(
+                            onClick = {
+                                isSheetOpen = true
+                                scope.launch {
+                                    dataStore.saveConfig(appWidgetId, currentConfig)
+                                }
+                                isSaveEnabled = true
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Show Preview")
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    Log.d(
+                                        "ConfigActivityLog",
+                                        "Create Widget onClick: currentConfig = $currentConfig"
+                                    )
+                                    dataStore.saveConfig(appWidgetId, currentConfig)
+
+                                    val glanceId =
+                                        GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+                                    QrWidget().update(context, glanceId)
+
+                                    val currentSaved = dataStore.getSavedConfigs().first()
+                                    val newSaved = (currentSaved + currentConfig).distinct()
+                                    dataStore.saveConfigs(newSaved)
+
+                                    onConfigComplete()
+                                }
+                            },
+                            enabled = isSaveEnabled && currentConfig.data.any {
+                                when (it) {
+                                    is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                                    is QrData.Contact -> it.name.isNotBlank()
+                                    is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Create Widget")
                         }
                     }
-                }
-            }
-
-            Text("Saved", style = MaterialTheme.typography.headlineMedium)
-            var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
-            LaunchedEffect(key1 = Unit) {
-                dataStore.getSavedConfigs().collect {
-                    savedConfigs = it
-                }
-            }
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(items = savedConfigs) { savedConfig ->
-                    Card(
-                        onClick = { updateConfig(savedConfig) },
-                    ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            QrCodePreview(config = savedConfig)
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        isSheetOpen = true
-                        scope.launch {
-                            dataStore.saveConfig(appWidgetId, currentConfig)
-                        }
-                        isSaveEnabled = true
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Show Preview")
-                }
-                Button(
-                    onClick = {
-                        scope.launch {
-                            Log.d(
-                                "ConfigActivityLog",
-                                "Create Widget onClick: currentConfig = $currentConfig"
-                            )
-                            dataStore.saveConfig(appWidgetId, currentConfig)
-
-                            val glanceId =
-                                GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                            QrWidget().update(context, glanceId)
-
-                            val currentSaved = dataStore.getSavedConfigs().first()
-                            val newSaved = (currentSaved + currentConfig).distinct()
-                            dataStore.saveConfigs(newSaved)
-
-                            onConfigComplete()
-                        }
-                    },
-                    enabled = isSaveEnabled && currentConfig.data.any {
-                        when (it) {
-                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                            is QrData.Contact -> it.name.isNotBlank()
-                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Create Widget")
                 }
             }
         }
@@ -607,6 +444,253 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
             },
             onDismiss = { showFgGradientColorPicker2 = false }
         )
+    }
+}
+
+@Composable
+fun DataScreen(
+    currentConfig: QrConfig,
+    updateConfig: (QrConfig) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Data Section
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Data", style = MaterialTheme.typography.headlineMedium)
+
+                val selectedTypes = remember(currentConfig.data) {
+                    currentConfig.data.map {
+                        when (it) {
+                            is QrData.Links -> QrDataType.Links
+                            is QrData.Contact -> QrDataType.Contact
+                            is QrData.SocialMedia -> QrDataType.SocialMedia
+                        }
+                    }
+                }
+
+                MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    QrDataType.values().forEachIndexed { index, type ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = QrDataType.values().size),
+                            onCheckedChange = { isChecked ->
+                                val currentData = currentConfig.data.toMutableList()
+                                if (isChecked) {
+                                    if (selectedTypes.none { it == type }) {
+                                        val newData = when (type) {
+                                            QrDataType.Links -> QrData.Links(links = listOf(""))
+                                            QrDataType.Contact -> QrData.Contact()
+                                            QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("","")))
+                                        }
+                                        currentData.add(newData)
+                                    }
+                                } else {
+                                    currentData.removeAll {
+                                        when(it) {
+                                            is QrData.Links -> type == QrDataType.Links
+                                            is QrData.Contact -> type == QrDataType.Contact
+                                            is QrData.SocialMedia -> type == QrDataType.SocialMedia
+                                        }
+                                    }
+                                }
+                                updateConfig(currentConfig.copy(data = currentData))
+                            },
+                            checked = type in selectedTypes
+                        ) {
+                            Text(type.name)
+                        }
+                    }
+                }
+
+                currentConfig.data.forEach { data ->
+                    when (data) {
+                        is QrData.Links -> LinksForm(links = data) { newLinks ->
+                            val newDataList = currentConfig.data.toMutableList()
+                            val index = newDataList.indexOf(data)
+                            if (index != -1) {
+                                newDataList[index] = newLinks
+                                updateConfig(currentConfig.copy(data = newDataList))
+                            }
+                        }
+                        is QrData.Contact -> ContactForm(contact = data) { newContact ->
+                            val newDataList = currentConfig.data.toMutableList()
+                            val index = newDataList.indexOf(data)
+                            if (index != -1) {
+                                newDataList[index] = newContact
+                                updateConfig(currentConfig.copy(data = newDataList))
+                            }
+                        }
+                        is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
+                            val newDataList = currentConfig.data.toMutableList()
+                            val index = newDataList.indexOf(data)
+                            if (index != -1) {
+                                newDataList[index] = newSocialMedia
+                                updateConfig(currentConfig.copy(data = newDataList))
+                            }
+                        }
+                    }
+                }
+
+                Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
+                Slider(
+                    value = currentConfig.backgroundAlpha,
+                    onValueChange = { updateConfig(currentConfig.copy(backgroundAlpha = it)) },
+                    valueRange = 0f..1f
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AppearanceScreen(
+    currentConfig: QrConfig,
+    updateConfig: (QrConfig) -> Unit,
+    showForegroundColorPicker: () -> Unit,
+    showBackgroundColorPicker: () -> Unit,
+    showGradientColorPicker1: () -> Unit,
+    showGradientColorPicker2: () -> Unit,
+    showFgGradientColorPicker1: () -> Unit,
+    showFgGradientColorPicker2: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Appearance Section
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Appearance", style = MaterialTheme.typography.headlineMedium)
+
+                Text("Background Type", style = MaterialTheme.typography.bodyLarge)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    BackgroundType.values().forEachIndexed { index, backgroundType ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
+                            onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
+                            selected = currentConfig.backgroundType == backgroundType
+                        ) {
+                            Text(backgroundType.name)
+                        }
+                    }
+                }
+
+                Text("Shape", style = MaterialTheme.typography.bodyLarge)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(items = QrShape.values()) { shape ->
+                        val isSelected = currentConfig.shape == shape
+                        Card(
+                            onClick = { updateConfig(currentConfig.copy(shape = shape)) },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = when (shape) {
+                                        QrShape.Square -> Icons.Default.CropSquare
+                                        QrShape.Circle -> Icons.Default.Circle
+                                        QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
+                                        QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
+                                        else -> Icons.Default.CropSquare
+                                    },
+                                    contentDescription = shape.name,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Text(shape.name, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+
+                Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    ForegroundType.values().forEachIndexed { index, foregroundType ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
+                            onClick = { updateConfig(currentConfig.copy(foregroundType = foregroundType)) },
+                            selected = currentConfig.foregroundType == foregroundType
+                        ) {
+                            Text(foregroundType.name)
+                        }
+                    }
+                }
+
+                when (currentConfig.foregroundType) {
+                    ForegroundType.SOLID -> {
+                        ColorPickerField(
+                            label = "Foreground Color",
+                            color = currentConfig.foregroundColor,
+                            onClick = showForegroundColorPicker
+                        )
+                    }
+                    ForegroundType.GRADIENT -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ColorPickerField(
+                                label = "Foreground Gradient Color 1",
+                                color = currentConfig.foregroundGradientColors.getOrElse(0) { 0xFF000000.toInt() },
+                                onClick = showFgGradientColorPicker1
+                            )
+                            ColorPickerField(
+                                label = "Foreground Gradient Color 2",
+                                color = currentConfig.foregroundGradientColors.getOrElse(1) { 0xFF0000FF.toInt() },
+                                onClick = showFgGradientColorPicker2
+                            )
+                        }
+                    }
+                }
+
+                when (currentConfig.backgroundType) {
+                    BackgroundType.SOLID -> {
+                        ColorPickerField(
+                            label = "Background Color",
+                            color = currentConfig.backgroundColor,
+                            onClick = showBackgroundColorPicker
+                        )
+                    }
+                    BackgroundType.GRADIENT -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ColorPickerField(
+                                label = "Gradient Color 1",
+                                color = currentConfig.backgroundGradientColors.getOrElse(0) { 0xFFFFFFFF.toInt() },
+                                onClick = showGradientColorPicker1
+                            )
+                            ColorPickerField(
+                                label = "Gradient Color 2",
+                                color = currentConfig.backgroundGradientColors.getOrElse(1) { 0xFF000000.toInt() },
+                                onClick = showGradientColorPicker2
+                            )
+                            Text("Gradient Angle: ${currentConfig.backgroundGradientAngle.toInt()}°", style = MaterialTheme.typography.bodyLarge)
+                            Slider(
+                                value = currentConfig.backgroundGradientAngle,
+                                onValueChange = { updateConfig(currentConfig.copy(backgroundGradientAngle = it)) },
+                                valueRange = 0f..360f,
+                                steps = 35
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
