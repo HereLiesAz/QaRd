@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.util.Log
 import androidx.core.graphics.createBitmap
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
@@ -57,6 +58,7 @@ object QrGenerator {
 
             val renderedBytes = qrCode.renderToBytes()
             val qrBitmap = BitmapFactory.decodeByteArray(renderedBytes, 0, renderedBytes.size)
+                ?: return null
 
             // Add a margin to the QR code
             val margin = (qrBitmap.width * 0.1f).toInt()
@@ -107,14 +109,17 @@ object QrGenerator {
             borderedBitmap
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("QrGenerator", "Failed to generate QR code", e)
             null
         }
     }
 
+    private fun escapeVCard(value: String): String =
+        value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
     private fun createVCard(contact: QrData.Contact, socialLinks: List<com.hereliesaz.qard.data.SocialLink>, links: List<String>): String {
         val socialLinksStr = socialLinks.filter { it.url.isNotBlank() }.joinToString("\n") {
-            "X-SOCIALPROFILE;type=${it.platform}:${it.url}"
+            "X-SOCIALPROFILE;type=${escapeVCard(it.platform)}:${it.url}"
         }
         val linksStr = links.filter { it.isNotBlank() }.joinToString("\n") {
             "URL:$it"
@@ -122,9 +127,9 @@ object QrGenerator {
         return """
             BEGIN:VCARD
             VERSION:3.0
-            N:${contact.name}
-            ORG:${contact.organization}
-            TEL:${contact.phone}
+            N:${escapeVCard(contact.name)}
+            ORG:${escapeVCard(contact.organization)}
+            TEL:${escapeVCard(contact.phone)}
             URL:${contact.website}
             EMAIL:${contact.email}
             $socialLinksStr

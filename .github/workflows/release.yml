@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0 
 
       - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Extract Java version from build files
         id: get_java_version
@@ -51,12 +51,12 @@ jobs:
       - name: Increment version
         id: versioning
         run: |
-          # Define the path to your app's build.gradle file
-          GRADLE_FILE="app/build.gradle"
+          # Define the path to your app's build.gradle.kts file (Kotlin DSL)
+          GRADLE_FILE="app/build.gradle.kts"
 
-          # Extract current version code and name
-          CURRENT_VERSION_CODE=$(grep 'versionCode ' $GRADLE_FILE | awk '{print $2}')
-          CURRENT_VERSION_NAME=$(grep 'versionName ' $GRADLE_FILE | awk '{print $2}' | tr -d '"')
+          # Extract current version code and name (Kotlin DSL uses = assignment)
+          CURRENT_VERSION_CODE=$(grep 'versionCode' $GRADLE_FILE | grep -o '[0-9]\+')
+          CURRENT_VERSION_NAME=$(grep 'versionName' $GRADLE_FILE | grep -o '"[^"]*"' | tr -d '"')
 
           # Increment versionCode
           NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
@@ -64,12 +64,12 @@ jobs:
           # Increment patch number in versionName (e.g., 1.2.3 -> 1.2.4)
           NEW_VERSION_NAME=$(echo $CURRENT_VERSION_NAME | awk -F. -v OFS=. '{$NF = $NF + 1;} 1')
 
-          # Update the build.gradle file with the new versions
-          sed -i "s/versionCode .*/versionCode $NEW_VERSION_CODE/" $GRADLE_FILE
-          sed -i "s/versionName .*/versionName \"$NEW_VERSION_NAME\"/" $GRADLE_FILE
+          # Update the build.gradle.kts file with the new versions
+          sed -i "s/versionCode = .*/versionCode = $NEW_VERSION_CODE/" $GRADLE_FILE
+          sed -i "s/versionName = .*/versionName = \"$NEW_VERSION_NAME\"/" $GRADLE_FILE
 
           echo "Version bumped to $NEW_VERSION_NAME (Code: $NEW_VERSION_CODE)"
-          
+
           # Set outputs for subsequent steps
           echo "new_version_name=$NEW_VERSION_NAME" >> "$GITHUB_OUTPUT"
 
@@ -105,7 +105,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add app/build.gradle
+          git add app/build.gradle.kts
           # Commit only if there are changes
           if ! git diff --staged --quiet; then
             git commit -m "chore(release): Bump version to ${{ steps.versioning.outputs.new_version_name }}"

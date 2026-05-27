@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -52,7 +51,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -68,7 +66,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.navigation.compose.NavHost
@@ -76,8 +73,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
-import com.hereliesaz.aznavrail.AzNavRail
-import com.hereliesaz.aznavrail.AzNavRailItem
+import com.hereliesaz.aznavrail.ui.AzNavRail
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.QrConfig
@@ -130,9 +126,9 @@ class ConfigActivity : ComponentActivity() {
 private fun generateRandomPresets(): List<QrConfig> {
     return (1..20).map {
         val random = Random.Default
-        val shape = QrShape.values().random()
-        val fgType = ForegroundType.values().random()
-        val bgType = BackgroundType.values().random()
+        val shape = QrShape.entries.random()
+        val fgType = ForegroundType.entries.random()
+        val bgType = BackgroundType.entries.random()
 
         fun randomColor() = Color(random.nextFloat(), random.nextFloat(), random.nextFloat(), 1f).toArgb()
         fun randomColorList() = listOf(randomColor(), randomColor())
@@ -275,16 +271,19 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Icon(
-                                        imageVector = when (shape) {
+                                        imageVector = when (preset.shape) {
                                             QrShape.Square -> Icons.Default.CropSquare
                                             QrShape.Circle -> Icons.Default.Circle
                                             QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
                                             QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
                                         },
-                                        contentDescription = shape.name,
+                                        contentDescription = preset.shape.name,
                                         modifier = Modifier.size(48.dp)
                                     )
-                                    Text(shape.name, style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        preset.shape.name,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
                                 Box(modifier = Modifier.padding(8.dp)) {
                                     QrCodePreview(config = preset)
                                 }
@@ -477,9 +476,12 @@ fun DataScreen(
                 }
 
                 MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    QrDataType.values().forEachIndexed { index, type ->
+                    QrDataType.entries.forEachIndexed { index, type ->
                         SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = QrDataType.values().size),
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = QrDataType.entries.size
+                            ),
                             onCheckedChange = { isChecked ->
                                 val currentData = currentConfig.data.toMutableList()
                                 if (isChecked) {
@@ -537,13 +539,6 @@ fun DataScreen(
                         }
                     }
                 }
-
-                Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
-                Slider(
-                    value = currentConfig.backgroundAlpha,
-                    onValueChange = { updateConfig(currentConfig.copy(backgroundAlpha = it)) },
-                    valueRange = 0f..1f
-                )
             }
         }
     }
@@ -576,9 +571,12 @@ fun AppearanceScreen(
 
                 Text("Background Type", style = MaterialTheme.typography.bodyLarge)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    BackgroundType.values().forEachIndexed { index, backgroundType ->
+                    BackgroundType.entries.forEachIndexed { index, backgroundType ->
                         SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = BackgroundType.values().size),
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = BackgroundType.entries.size
+                            ),
                             onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
                             selected = currentConfig.backgroundType == backgroundType
                         ) {
@@ -592,7 +590,7 @@ fun AppearanceScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(items = QrShape.values()) { shape ->
+                    items(items = QrShape.entries) { shape ->
                         val isSelected = currentConfig.shape == shape
                         Card(
                             onClick = { updateConfig(currentConfig.copy(shape = shape)) },
@@ -611,7 +609,6 @@ fun AppearanceScreen(
                                         QrShape.Circle -> Icons.Default.Circle
                                         QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
                                         QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
-                                        else -> Icons.Default.CropSquare
                                     },
                                     contentDescription = shape.name,
                                     modifier = Modifier.size(48.dp)
@@ -624,9 +621,12 @@ fun AppearanceScreen(
 
                 Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    ForegroundType.values().forEachIndexed { index, foregroundType ->
+                    ForegroundType.entries.forEachIndexed { index, foregroundType ->
                         SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ForegroundType.values().size),
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = ForegroundType.entries.size
+                            ),
                             onClick = { updateConfig(currentConfig.copy(foregroundType = foregroundType)) },
                             selected = currentConfig.foregroundType == foregroundType
                         ) {
@@ -689,6 +689,13 @@ fun AppearanceScreen(
                         }
                     }
                 }
+
+                Text("Background Transparency", style = MaterialTheme.typography.bodyLarge)
+                Slider(
+                    value = currentConfig.backgroundAlpha,
+                    onValueChange = { updateConfig(currentConfig.copy(backgroundAlpha = it)) },
+                    valueRange = 0f..1f
+                )
             }
         }
     }
@@ -874,7 +881,7 @@ fun QrCodePreview(config: QrConfig) {
     ) {
         Text("Preview", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(8.dp))
-        val qrBitmap = QrGenerator.generate(config)
+        val qrBitmap = remember(config) { QrGenerator.generate(config) }
         if (qrBitmap != null) {
             Image(
                 bitmap = qrBitmap.asImageBitmap(),
