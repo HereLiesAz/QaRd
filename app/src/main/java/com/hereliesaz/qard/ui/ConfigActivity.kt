@@ -46,7 +46,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -68,12 +67,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
-import com.hereliesaz.aznavrail.ui.AzNavRail
+import com.hereliesaz.aznavrail.*
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
 import com.hereliesaz.qard.data.QrConfig
@@ -212,48 +210,37 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
     }
 
     val navController = rememberNavController()
-    var selectedItem by remember { mutableStateOf(0) }
 
-    Scaffold { paddingValues ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            AzNavRail(
-                selectedItem = selectedItem,
-                onSelectItem = {
-                    selectedItem = it
-                    navController.navigate(if (it == 0) "data" else "appearance")
-                }
-            ) {
-                AzNavRailItem(icon = { Icon(Icons.Default.Person, "Data") }, label = { Text("Data") })
-                AzNavRailItem(icon = { Icon(Icons.Default.Settings, "Appearance") }, label = { Text("Appearance") })
-            }
+    AzHostActivityLayout(navController = navController) {
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Person)
+        azRailItem(
+            id = "appearance",
+            text = "Appearance",
+            route = "appearance",
+            content = Icons.Default.Settings
+        )
 
-            Column(modifier = Modifier.weight(1f)) {
-                NavHost(
-                    navController = navController,
-                    startDestination = "data",
-                ) {
-                    composable("data") {
-                        DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
-                    }
-                    composable("appearance") {
-                        AppearanceScreen(
-                            currentConfig = currentConfig,
-                            updateConfig = updateConfig,
-                            showForegroundColorPicker = { showForegroundColorPicker = true },
-                            showBackgroundColorPicker = { showBackgroundColorPicker = true },
-                            showGradientColorPicker1 = { showGradientColorPicker1 = true },
-                            showGradientColorPicker2 = { showGradientColorPicker2 = true },
-                            showFgGradientColorPicker1 = { showFgGradientColorPicker1 = true },
-                            showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
-                        )
+        onscreen {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    AzNavHost(startDestination = "data") {
+                        composable("data") {
+                            DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
+                        }
+                        composable("appearance") {
+                            AppearanceScreen(
+                                currentConfig = currentConfig,
+                                updateConfig = updateConfig,
+                                showForegroundColorPicker = { showForegroundColorPicker = true },
+                                showBackgroundColorPicker = { showBackgroundColorPicker = true },
+                                showGradientColorPicker1 = { showGradientColorPicker1 = true },
+                                showGradientColorPicker2 = { showGradientColorPicker2 = true },
+                                showFgGradientColorPicker1 = { showFgGradientColorPicker1 = true },
+                                showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
+                            )
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
 
                 // Presets, Saved, and Bottom buttons
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -284,6 +271,7 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                                         preset.shape.name,
                                         style = MaterialTheme.typography.labelSmall
                                     )
+                                }
                                 Box(modifier = Modifier.padding(8.dp)) {
                                     QrCodePreview(config = preset)
                                 }

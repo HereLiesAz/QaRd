@@ -1,23 +1,23 @@
 [versions]
-androidApplication = "8.12.0"
-aznavrail = "1.8"
+androidApplication = "9.2.1"
+aznavrail = "9.5"
 composeColorPicker = "0.7.0"
-kotlin = "2.2.10"
-coreKtx = "1.17.0"
-kotlinxSerializationJson = "1.9.0"
-lifecycleRuntimeKtx = "2.9.2"
-activityCompose = "1.10.1"
-composeBom = "2024.05.00"
+kotlin = "2.3.21"
+coreKtx = "1.18.0"
+kotlinxSerializationJson = "1.11.0"
+lifecycleRuntimeKtx = "2.10.0"
+activityCompose = "1.13.0"
+composeBom = "2026.05.01"
 glance = "1.1.1"
-datastore = "1.1.7"
+datastore = "1.2.1"
 junit = "4.13.2"
 androidxJunit = "1.3.0"
 espressoCore = "3.7.0"
-materialKolor = "3.0.1"
+materialKolor = "4.1.1"
 qrcodeKotlinAndroid = "4.5.0"
 appcompat = "1.7.1" # Added appcompat version
 constraintlayout = "2.2.1" # Add this line for ConstraintLayout version
-navigationCompose = "2.9.3"
+navigationCompose = "2.9.8"
 
 [libraries]
 # Core & UI

@@ -4,7 +4,13 @@
       "Bash(jar:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(./gradlew:*)",
+      "Bash(mkdir:*)",
+      "Bash(jar xf:*)",
+      "Bash(xargs cat:*)",
+      "Bash(unzip:*)"
     ]
   }
 }
