@@ -17,14 +17,20 @@
 
 
         <activity
-            android:name=".ui.ConfigActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
-            android:allowUntrustedActivityEmbedding="true"
             android:theme="@style/Theme.QaRd">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.ConfigActivity"
+            android:allowUntrustedActivityEmbedding="true"
+            android:exported="true"
+            android:theme="@style/Theme.QaRd">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
