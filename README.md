@@ -11,7 +11,6 @@ Design your QR code widget, shared like a digital business card or contact.
 - [Project Overview](#project-overview)
 - [Features](#features)
 - [Screenshots](#screenshots)
-- [Installation](#installation)
 - [Usage](#usage)
 - [Lock Screen Availability](#lock-screen-availability)
 - [License](#license)
