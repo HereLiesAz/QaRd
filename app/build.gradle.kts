@@ -45,12 +45,12 @@ val currentVersionName = "$verMajor.$verMinor.$verPatch"
 
 android {
     namespace = "com.hereliesaz.qard"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.hereliesaz.qard"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = currentVersionCode
         versionName = currentVersionName
 
