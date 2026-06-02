@@ -30,36 +30,6 @@ Share your contact info, files, or social media with a QR code widget. A simple 
 *   **Simple and Lightweight:** The app is easy to use. No unnecessary permissions. Just a focus on doing one thing well.
 *   **Multiple Widgets:** Need more than one QaRd? You just effin' do it, and BAM! Plural effin' QR codes. Put bunches of QaRds on your screen, you clever you.
 
-## Installation
-
-### From Source
-
-To build and install the app from the source code, you will need:
-
-*   [Android Studio](https://developer.android.com/studio) (latest version recommended)
-*   Android SDK Platform 34
-*   An Android device or emulator running Android 5.0 (Lollipop) or newer.
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/hereliesaz/qard.git
-    ```
-2.  **Open the project in Android Studio.**
-3.  **Build the project:**
-    *   From the menu bar, select **Build > Make Project**.
-    *   Alternatively, run the following command in the project's root directory:
-        ```bash
-        ./gradlew build
-        ```
-4.  **Run the app:**
-    *   Select your device from the toolbar and click the "Run" button.
-    *   Alternatively, run:
-        ```bash
-        ./gradlew installDebug
-        ```
-
-## Usage
-
 **How To Work It:**
 
 1.  Add the QaRd widget to your home screen.
