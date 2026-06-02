@@ -1,11 +1,45 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.kotlin.compose)
-
-
 }
+
+// --- Versioning -----------------------------------------------------------
+// versionName is composed from version.properties (major/minor/patch); the
+// build number (versionBuild) is auto-incremented on release builds.
+val versionPropsFile = file("version.properties")
+val versionProps = Properties().apply {
+    if (versionPropsFile.exists()) {
+        versionPropsFile.inputStream().use { load(it) }
+    }
+}
+
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
+
+val isReleaseBuild = gradle.startParameter.taskNames.any {
+    it.contains("Release", ignoreCase = true) || it.contains("bundle", ignoreCase = true)
+}
+if (isReleaseBuild) {
+    currentVersionCode += 1
+    versionProps.setProperty("versionBuild", currentVersionCode.toString())
+    versionPropsFile.outputStream().use {
+        versionProps.store(it, "Auto-incremented by release build")
+    }
+}
+
+val verMajor = versionProps.getProperty("versionMajor", "1")
+val verMinor = versionProps.getProperty("versionMinor", "0")
+val verPatch = versionProps.getProperty("versionPatch", "0")
 
 android {
     namespace = "com.hereliesaz.qard"
@@ -15,8 +49,8 @@ android {
         applicationId = "com.hereliesaz.qard"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "2.0.2"
+        versionCode = currentVersionCode
+        versionName = "$verMajor.$verMinor.$verPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
