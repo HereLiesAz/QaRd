@@ -10,15 +10,15 @@ plugins {
 // --- Versioning -----------------------------------------------------------
 // versionName is composed from version.properties (major/minor/patch); the
 // build number (versionBuild) is auto-incremented on release builds.
-val versionPropsFile = file("version.properties")
+val versionPropsFile = rootProject.file("version.properties")
 val versionProps = Properties().apply {
     if (versionPropsFile.exists()) {
         versionPropsFile.inputStream().use { load(it) }
     }
 }
 
-val localPropertiesFile = rootProject.file("local.properties")
 val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
         localPropertiesFile.inputStream().use { load(it) }
     }
@@ -26,36 +26,10 @@ val localProperties = Properties().apply {
 
 var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
 
+// Automatically increment versionCode for release builds.
 val isReleaseBuild = gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("bundle", ignoreCase = true)
 }
-if (isReleaseBuild) {
-    currentVersionCode += 1
-    versionProps.setProperty("versionBuild", currentVersionCode.toString())
-    versionPropsFile.outputStream().use {
-        versionProps.store(it, "Auto-incremented by release build")
-    }
-}
-// Load version properties
-val versionPropsFile = project.rootProject.file("version.properties")
-val versionProps = Properties().apply {
-    if (versionPropsFile.exists()) {
-        versionPropsFile.inputStream().use { load(it) }
-    }
-}
-
-// Load local properties
-val localProperties = Properties().apply {
-    val localPropertiesFile = project.rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { load(it) }
-    }
-}
-
-var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
-
-// Automatically increment versionCode for release builds
-val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
 if (isReleaseBuild) {
     currentVersionCode++
     versionProps.setProperty("versionBuild", currentVersionCode.toString())
@@ -67,7 +41,6 @@ if (isReleaseBuild) {
 val verMajor = versionProps.getProperty("versionMajor", "1")
 val verMinor = versionProps.getProperty("versionMinor", "0")
 val verPatch = versionProps.getProperty("versionPatch", "0")
-val verBuild = versionProps.getProperty("versionBuild", "1")
 val currentVersionName = "$verMajor.$verMinor.$verPatch"
 
 android {
@@ -79,7 +52,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = currentVersionCode
-        versionName = "$verMajor.$verMinor.$verPatch"
+        versionName = currentVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
