@@ -1,9 +1,9 @@
 package com.hereliesaz.qard.ui
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.appwidget.AppWidgetManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,14 +18,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -37,7 +46,6 @@ import com.hereliesaz.qard.data.QrDataStore
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 /**
@@ -63,22 +71,8 @@ class DetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val config = resolveConfig()
-        if (config == null) {
-            finish()
-            return
-        }
-
-        setContent {
-            QaRdTheme {
-                QrCodeDetailScreen(config = config, onBack = { finish() })
-            }
-        }
-    }
-
-    private fun resolveConfig(): QrConfig? {
-        intent?.getStringExtra(EXTRA_CONFIG)?.let { json ->
-            return try {
+        val initialConfig = intent?.getStringExtra(EXTRA_CONFIG)?.let { json ->
+            try {
                 Json.decodeFromString<QrConfig>(json)
             } catch (e: Exception) {
                 null
@@ -88,11 +82,43 @@ class DetailActivity : ComponentActivity() {
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
-        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            // Widget taps don't carry the config; load it from storage.
-            return runBlocking { QrDataStore(this@DetailActivity).getConfig(appWidgetId).first() }
+
+        if (initialConfig == null && appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            finish()
+            return
         }
-        return null
+
+        setContent {
+            QaRdTheme {
+                DetailRoute(
+                    initialConfig = initialConfig,
+                    appWidgetId = appWidgetId,
+                    onBack = { finish() }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRoute(initialConfig: QrConfig?, appWidgetId: Int, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var config by remember { mutableStateOf(initialConfig) }
+
+    // Widget taps don't carry the config; load it from storage off the UI thread.
+    LaunchedEffect(appWidgetId) {
+        if (config == null && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            config = QrDataStore(context).getConfig(appWidgetId).first()
+        }
+    }
+
+    val current = config
+    if (current != null) {
+        QrCodeDetailScreen(config = current, onBack = onBack)
+    } else {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
     }
 }
 
@@ -101,7 +127,19 @@ class DetailActivity : ComponentActivity() {
 fun QrCodeDetailScreen(config: QrConfig, onBack: () -> Unit) {
     val context = LocalContext.current
     Scaffold(
-        topBar = { TopAppBar(title = { Text("QR Code Details") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("QR Code Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier

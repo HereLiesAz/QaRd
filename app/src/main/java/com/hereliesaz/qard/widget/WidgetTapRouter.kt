@@ -38,13 +38,16 @@ object WidgetTapRouter {
     private val pendingSingleTaps = mutableMapOf<Int, Job>()
 
     fun onTap(context: Context, appWidgetId: Int) {
+        // Use the application context: this singleton scope outlives the
+        // short-lived receiver/widget context that delivered the tap.
+        val appContext = context.applicationContext
         synchronized(pendingSingleTaps) {
             val pending = pendingSingleTaps[appWidgetId]
             if (pending != null && pending.isActive) {
                 // Second tap inside the window -> double tap.
                 pending.cancel()
                 pendingSingleTaps.remove(appWidgetId)
-                launchConstruction(context, appWidgetId)
+                launchConstruction(appContext, appWidgetId)
                 return
             }
 
@@ -52,7 +55,7 @@ object WidgetTapRouter {
             val job = scope.launch {
                 delay(DOUBLE_TAP_WINDOW_MS)
                 if (isActive) {
-                    launchDetail(context, appWidgetId)
+                    launchDetail(appContext, appWidgetId)
                     synchronized(pendingSingleTaps) { pendingSingleTaps.remove(appWidgetId) }
                 }
             }

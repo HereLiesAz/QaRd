@@ -58,9 +58,20 @@ object QrImageExporter {
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             ?: return null
 
-        resolver.openOutputStream(uri)?.use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        } ?: return null
+        val success = try {
+            resolver.openOutputStream(uri)?.use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            } ?: false
+        } catch (e: Exception) {
+            Log.e("QrImageExporter", "Failed to write bitmap to MediaStore", e)
+            false
+        }
+
+        if (!success) {
+            // Don't leave an orphaned pending entry in the gallery.
+            resolver.delete(uri, null, null)
+            return null
+        }
 
         values.clear()
         values.put(MediaStore.Images.Media.IS_PENDING, 0)
