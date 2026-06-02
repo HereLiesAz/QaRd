@@ -224,9 +224,35 @@ fun ConfigScreen(
 
     var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
 
+    // Persist the current config into the saved-configs list so it shows up in
+    // the gallery and can be reopened/edited later. When editing an existing
+    // config (opened via double-tap), update it in place instead of adding a
+    // duplicate.
+    suspend fun persistCurrentConfig() {
+        val cfg = config ?: return
+        val saved = dataStore.getSavedConfigs().first().toMutableList()
+        val original = initialConfig
+        val idx = if (original != null) saved.indexOf(original) else -1
+        when {
+            idx >= 0 -> saved[idx] = cfg
+            !saved.contains(cfg) -> saved.add(cfg)
+        }
+        dataStore.saveConfigs(saved)
+    }
+
+    fun saveAndFinish() {
+        if (config == null) return
+        scope.launch {
+            persistCurrentConfig()
+            onConfigComplete()
+        }
+    }
+
     fun saveCurrentAsImage() {
         val cfg = config ?: return
         scope.launch {
+            // Persist the data first so the code is reloadable, then export.
+            persistCurrentConfig()
             val uri = withContext(Dispatchers.IO) {
                 QrImageExporter.saveToGallery(context, cfg)
             }
@@ -418,14 +444,21 @@ fun ConfigScreen(
                                 onClick = { isSheetOpen = true },
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Show Preview")
+                                Text("Preview")
                             }
-                            Button(
+                            OutlinedButton(
                                 onClick = onSaveImageClick,
                                 enabled = hasData,
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Save as Image")
+                                Text("Save Image")
+                            }
+                            Button(
+                                onClick = { saveAndFinish() },
+                                enabled = hasData,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Save")
                             }
                         } else {
                             OutlinedButton(
