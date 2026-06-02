@@ -27,6 +27,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Sign release builds with the debug key so the generated
+            // app-release.apk can be sideloaded. Replace this with a dedicated
+            // upload/release keystore before publishing to the Play Store.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
