@@ -14,7 +14,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,16 +30,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -50,7 +56,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -59,7 +64,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,7 +76,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.navigation.compose.composable
@@ -154,7 +160,6 @@ class ConfigActivity : ComponentActivity() {
                     appWidgetId = appWidgetId,
                     initialConfig = initialConfig
                 ) {
-                    // Called when configuration is complete.
                     if (mode == MODE_WIDGET_CONFIG) {
                         val resultValue =
                             Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -191,6 +196,13 @@ private fun generateRandomPresets(): List<QrConfig> {
     }
 }
 
+private fun shapeIcon(shape: QrShape): ImageVector = when (shape) {
+    QrShape.Square -> Icons.Default.CropSquare
+    QrShape.Circle -> Icons.Default.Circle
+    QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
+    QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigScreen(
@@ -216,17 +228,36 @@ fun ConfigScreen(
     var showGradientColorPicker2 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker1 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker2 by remember { mutableStateOf(false) }
-    var isSaveEnabled by remember { mutableStateOf(false) }
-    var showPreview by remember { mutableStateOf(false) }
-
-    val sheetState = rememberModalBottomSheetState()
-    var isSheetOpen by remember { mutableStateOf(false) }
 
     var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
+
+    // Persist the current config into the saved-configs list so it shows up in
+    // the gallery and can be reopened/edited later. When editing an existing
+    // config, update it in place instead of adding a duplicate.
+    suspend fun persistCurrentConfig() {
+        val cfg = config ?: return
+        val saved = dataStore.getSavedConfigs().first().toMutableList()
+        val original = initialConfig
+        val idx = if (original != null) saved.indexOf(original) else -1
+        when {
+            idx >= 0 -> saved[idx] = cfg
+            !saved.contains(cfg) -> saved.add(cfg)
+        }
+        dataStore.saveConfigs(saved)
+    }
+
+    fun saveAndFinish() {
+        if (config == null) return
+        scope.launch {
+            persistCurrentConfig()
+            onConfigComplete()
+        }
+    }
 
     fun saveCurrentAsImage() {
         val cfg = config ?: return
         scope.launch {
+            persistCurrentConfig()
             val uri = withContext(Dispatchers.IO) {
                 QrImageExporter.saveToGallery(context, cfg)
             }
@@ -265,6 +296,17 @@ fun ConfigScreen(
         }
     }
 
+    fun createWidget() {
+        val cfg = config ?: return
+        scope.launch {
+            dataStore.saveConfig(appWidgetId, cfg)
+            val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+            QrWidget().update(context, glanceId)
+            persistCurrentConfig()
+            onConfigComplete()
+        }
+    }
+
     LaunchedEffect(key1 = appWidgetId) {
         val loadedConfig = if (isStandalone) {
             initialConfig ?: QrConfig()
@@ -289,36 +331,23 @@ fun ConfigScreen(
         return
     }
 
-    if (isSheetOpen) {
-        ModalBottomSheet(
-            sheetState = sheetState,
-            onDismissRequest = { isSheetOpen = false }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                QrCodePreview(
-                    config = currentConfig,
-                    title = if (isStandalone) "Preview of your QaRd" else "Preview of your saved QaRd"
-                )
-            }
+    val hasData = currentConfig.data.any {
+        when (it) {
+            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+            is QrData.Contact -> it.name.isNotBlank()
+            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
         }
     }
 
     val navController = rememberNavController()
 
     AzHostActivityLayout(navController = navController) {
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Person)
-        azRailItem(
-            id = "appearance",
-            text = "Appearance",
-            route = "appearance",
-            content = Icons.Default.Settings
-        )
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit)
+        azRailItem(id = "shape", text = "Shape", route = "shape", content = Icons.Default.Category)
+        azRailItem(id = "color", text = "Color", route = "color", content = Icons.Default.Palette)
+        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome)
+        azRailItem(id = "saved", text = "Saved", route = "saved", content = Icons.Default.Bookmark)
+        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility)
 
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -327,8 +356,11 @@ fun ConfigScreen(
                         composable("data") {
                             DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
                         }
-                        composable("appearance") {
-                            AppearanceScreen(
+                        composable("shape") {
+                            ShapeScreen(currentConfig = currentConfig, updateConfig = updateConfig)
+                        }
+                        composable("color") {
+                            ColorScreen(
                                 currentConfig = currentConfig,
                                 updateConfig = updateConfig,
                                 showForegroundColorPicker = { showForegroundColorPicker = true },
@@ -339,132 +371,50 @@ fun ConfigScreen(
                                 showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
                             )
                         }
+                        composable("presets") {
+                            PresetsScreen(
+                                presets = presets,
+                                currentConfig = currentConfig,
+                                updateConfig = updateConfig
+                            )
+                        }
+                        composable("saved") {
+                            SavedScreen(dataStore = dataStore, updateConfig = updateConfig)
+                        }
+                        composable("preview") {
+                            PreviewScreen(config = currentConfig)
+                        }
                     }
                 }
 
-                // Presets, Saved, and Bottom buttons
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Presets", style = MaterialTheme.typography.headlineMedium)
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(items = presets) { preset ->
-                            Card(
-                                onClick = { updateConfig(preset.copy(data = currentConfig.data)) },
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = when (preset.shape) {
-                                            QrShape.Square -> Icons.Default.CropSquare
-                                            QrShape.Circle -> Icons.Default.Circle
-                                            QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
-                                            QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
-                                        },
-                                        contentDescription = preset.shape.name,
-                                        modifier = Modifier.size(48.dp)
-                                    )
-                                    Text(
-                                        preset.shape.name,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                                Box(modifier = Modifier.padding(8.dp)) {
-                                    QrCodePreview(config = preset)
-                                }
-                            }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    if (isStandalone) {
+                        OutlinedButton(
+                            onClick = onSaveImageClick,
+                            enabled = hasData,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Save Image")
                         }
-                    }
-
-                    Text("Saved", style = MaterialTheme.typography.headlineMedium)
-                    var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
-                    LaunchedEffect(key1 = Unit) {
-                        dataStore.getSavedConfigs().collect {
-                            savedConfigs = it
+                        Button(
+                            onClick = { saveAndFinish() },
+                            enabled = hasData,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Save")
                         }
-                    }
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(items = savedConfigs) { savedConfig ->
-                            Card(
-                                onClick = { updateConfig(savedConfig) },
-                            ) {
-                                Box(modifier = Modifier.padding(8.dp)) {
-                                    QrCodePreview(config = savedConfig)
-                                }
-                            }
-                        }
-                    }
-
-                    val hasData = currentConfig.data.any {
-                        when (it) {
-                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                            is QrData.Contact -> it.name.isNotBlank()
-                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
-                        }
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isStandalone) {
-                            OutlinedButton(
-                                onClick = { isSheetOpen = true },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Show Preview")
-                            }
-                            Button(
-                                onClick = onSaveImageClick,
-                                enabled = hasData,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Save as Image")
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = {
-                                    isSheetOpen = true
-                                    scope.launch {
-                                        dataStore.saveConfig(appWidgetId, currentConfig)
-                                    }
-                                    isSaveEnabled = true
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Show Preview")
-                            }
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        Log.d(
-                                            "ConfigActivityLog",
-                                            "Create Widget onClick: currentConfig = $currentConfig"
-                                        )
-                                        dataStore.saveConfig(appWidgetId, currentConfig)
-
-                                        val glanceId =
-                                            GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                                        QrWidget().update(context, glanceId)
-
-                                        val currentSaved = dataStore.getSavedConfigs().first()
-                                        val newSaved = (currentSaved + currentConfig).distinct()
-                                        dataStore.saveConfigs(newSaved)
-
-                                        onConfigComplete()
-                                    }
-                                },
-                                enabled = isSaveEnabled && hasData,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Create Widget")
-                            }
+                    } else {
+                        Button(
+                            onClick = { createWidget() },
+                            enabled = hasData,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Create Widget")
                         }
                     }
                 }
@@ -563,7 +513,6 @@ fun DataScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Data Section
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -651,15 +600,9 @@ fun DataScreen(
 }
 
 @Composable
-fun AppearanceScreen(
+fun ShapeScreen(
     currentConfig: QrConfig,
-    updateConfig: (QrConfig) -> Unit,
-    showForegroundColorPicker: () -> Unit,
-    showBackgroundColorPicker: () -> Unit,
-    showGradientColorPicker1: () -> Unit,
-    showGradientColorPicker2: () -> Unit,
-    showFgGradientColorPicker1: () -> Unit,
-    showFgGradientColorPicker2: () -> Unit
+    updateConfig: (QrConfig) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -667,31 +610,12 @@ fun AppearanceScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Appearance Section
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Appearance", style = MaterialTheme.typography.headlineMedium)
-
-                Text("Background Type", style = MaterialTheme.typography.bodyLarge)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    BackgroundType.entries.forEachIndexed { index, backgroundType ->
-                        SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = BackgroundType.entries.size
-                            ),
-                            onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
-                            selected = currentConfig.backgroundType == backgroundType
-                        ) {
-                            Text(backgroundType.name)
-                        }
-                    }
-                }
-
-                Text("Shape", style = MaterialTheme.typography.bodyLarge)
+                Text("Shape", style = MaterialTheme.typography.headlineMedium)
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -710,17 +634,56 @@ fun AppearanceScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Icon(
-                                    imageVector = when (shape) {
-                                        QrShape.Square -> Icons.Default.CropSquare
-                                        QrShape.Circle -> Icons.Default.Circle
-                                        QrShape.RoundSquare -> Icons.Default.CheckBoxOutlineBlank
-                                        QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
-                                    },
+                                    imageVector = shapeIcon(shape),
                                     contentDescription = shape.name,
                                     modifier = Modifier.size(48.dp)
                                 )
                                 Text(shape.name, style = MaterialTheme.typography.labelSmall)
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ColorScreen(
+    currentConfig: QrConfig,
+    updateConfig: (QrConfig) -> Unit,
+    showForegroundColorPicker: () -> Unit,
+    showBackgroundColorPicker: () -> Unit,
+    showGradientColorPicker1: () -> Unit,
+    showGradientColorPicker2: () -> Unit,
+    showFgGradientColorPicker1: () -> Unit,
+    showFgGradientColorPicker2: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Color", style = MaterialTheme.typography.headlineMedium)
+
+                Text("Background Type", style = MaterialTheme.typography.bodyLarge)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    BackgroundType.entries.forEachIndexed { index, backgroundType ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = BackgroundType.entries.size
+                            ),
+                            onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
+                            selected = currentConfig.backgroundType == backgroundType
+                        ) {
+                            Text(backgroundType.name)
                         }
                     }
                 }
@@ -804,6 +767,103 @@ fun AppearanceScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun PresetsScreen(
+    presets: List<QrConfig>,
+    currentConfig: QrConfig,
+    updateConfig: (QrConfig) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Presets", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            "Tap a preset to apply its colours and shape to your data.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 120.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            gridItems(presets) { preset ->
+                Card(onClick = { updateConfig(preset.copy(data = currentConfig.data)) }) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QrCodePreview(config = preset, title = null, imageSize = 96.dp)
+                        Text(preset.shape.name, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SavedScreen(
+    dataStore: QrDataStore,
+    updateConfig: (QrConfig) -> Unit
+) {
+    var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
+    LaunchedEffect(key1 = Unit) {
+        dataStore.getSavedConfigs().collect { savedConfigs = it }
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Saved", style = MaterialTheme.typography.headlineMedium)
+        if (savedConfigs.isEmpty()) {
+            Text(
+                "Codes you save will appear here.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            Text(
+                "Tap a saved code to load it into the editor.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 120.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                gridItems(savedConfigs) { savedConfig ->
+                    Card(onClick = { updateConfig(savedConfig) }) {
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            QrCodePreview(config = savedConfig, title = null, imageSize = 96.dp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PreviewScreen(config: QrConfig) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        QrCodePreview(config = config, title = "Preview", imageSize = 240.dp)
     }
 }
 
@@ -980,7 +1040,7 @@ fun ColorPickerDialog(
 }
 
 @Composable
-fun QrCodePreview(config: QrConfig, title: String? = "Preview") {
+fun QrCodePreview(config: QrConfig, title: String? = "Preview", imageSize: Dp = 150.dp) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -994,7 +1054,7 @@ fun QrCodePreview(config: QrConfig, title: String? = "Preview") {
             Image(
                 bitmap = qrBitmap.asImageBitmap(),
                 contentDescription = "QR Code Preview",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(imageSize)
             )
         } else {
             Text("Enter data to see preview")
