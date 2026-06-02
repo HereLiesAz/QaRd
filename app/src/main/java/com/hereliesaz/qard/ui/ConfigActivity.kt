@@ -1,12 +1,20 @@
 package com.hereliesaz.qard.ui
 
+import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -82,38 +90,76 @@ import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
+import com.hereliesaz.qard.widget.QrImageExporter
 import com.hereliesaz.qard.widget.QrWidget
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
 class ConfigActivity : ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
+    companion object {
+        const val EXTRA_MODE = "extra_mode"
+        const val MODE_WIDGET_CONFIG = "widget_config"
+        const val MODE_STANDALONE = "standalone"
+        private const val EXTRA_CONFIG_JSON = "extra_config_json"
+
+        /**
+         * Launch the construction screen in standalone mode (no widget). Used by
+         * the in-app "Create QR code" flow and by double-tap-to-edit. Pass an
+         * existing [config] to edit it, or null to start from a blank code.
+         */
+        fun standaloneIntent(context: Context, config: QrConfig? = null): Intent =
+            Intent(context, ConfigActivity::class.java).apply {
+                putExtra(EXTRA_MODE, MODE_STANDALONE)
+                if (config != null) putExtra(EXTRA_CONFIG_JSON, Json.encodeToString(config))
+            }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(Activity.RESULT_CANCELED)
+
+        val mode = intent?.getStringExtra(EXTRA_MODE) ?: MODE_WIDGET_CONFIG
 
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        Log.d("ConfigActivityLog", "onCreate: appWidgetId = $appWidgetId")
+        Log.d("ConfigActivityLog", "onCreate: mode = $mode, appWidgetId = $appWidgetId")
 
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        if (mode == MODE_WIDGET_CONFIG && appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish()
             return
         }
 
+        val initialConfig = intent?.getStringExtra(EXTRA_CONFIG_JSON)?.let { json ->
+            try {
+                Json.decodeFromString<QrConfig>(json)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         setContent {
             QaRdTheme {
-                ConfigScreen(appWidgetId = appWidgetId) {
-                    // This lambda is called when configuration is complete
-                    val resultValue =
-                        Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                    setResult(Activity.RESULT_OK, resultValue)
+                ConfigScreen(
+                    mode = mode,
+                    appWidgetId = appWidgetId,
+                    initialConfig = initialConfig
+                ) {
+                    // Called when configuration is complete.
+                    if (mode == MODE_WIDGET_CONFIG) {
+                        val resultValue =
+                            Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                        setResult(Activity.RESULT_OK, resultValue)
+                    }
                     finish()
                 }
             }
@@ -147,10 +193,16 @@ private fun generateRandomPresets(): List<QrConfig> {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
+fun ConfigScreen(
+    mode: String,
+    appWidgetId: Int,
+    initialConfig: QrConfig?,
+    onConfigComplete: () -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dataStore = remember { QrDataStore(context) }
+    val isStandalone = mode == ConfigActivity.MODE_STANDALONE
 
     var config by remember { mutableStateOf<QrConfig?>(null) }
 
@@ -172,8 +224,53 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
 
     var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
 
+    fun saveCurrentAsImage() {
+        val cfg = config ?: return
+        scope.launch {
+            val uri = withContext(Dispatchers.IO) {
+                QrImageExporter.saveToGallery(context, cfg)
+            }
+            Toast.makeText(
+                context,
+                if (uri != null) "Saved to gallery (Pictures/QaRd)" else "Couldn't save image",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val writePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            saveCurrentAsImage()
+        } else {
+            Toast.makeText(
+                context,
+                "Storage permission is needed to save the image",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val onSaveImageClick = {
+        val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        if (needsPermission) {
+            writePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            saveCurrentAsImage()
+        }
+    }
+
     LaunchedEffect(key1 = appWidgetId) {
-        val loadedConfig = dataStore.getConfig(appWidgetId).first()
+        val loadedConfig = if (isStandalone) {
+            initialConfig ?: QrConfig()
+        } else {
+            dataStore.getConfig(appWidgetId).first()
+        }
         Log.d("ConfigActivityLog", "LaunchedEffect: loadedConfig = $loadedConfig")
         config = loadedConfig
         presets = generateRandomPresets()
@@ -204,7 +301,10 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                QrCodePreview(config = currentConfig)
+                QrCodePreview(
+                    config = currentConfig,
+                    title = if (isStandalone) "Preview of your QaRd" else "Preview of your saved QaRd"
+                )
             }
         }
     }
@@ -301,52 +401,70 @@ fun ConfigScreen(appWidgetId: Int, onConfigComplete: () -> Unit) {
                         }
                     }
 
+                    val hasData = currentConfig.data.any {
+                        when (it) {
+                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                            is QrData.Contact -> it.name.isNotBlank()
+                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                        }
+                    }
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                isSheetOpen = true
-                                scope.launch {
-                                    dataStore.saveConfig(appWidgetId, currentConfig)
-                                }
-                                isSaveEnabled = true
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Show Preview")
-                        }
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    Log.d(
-                                        "ConfigActivityLog",
-                                        "Create Widget onClick: currentConfig = $currentConfig"
-                                    )
-                                    dataStore.saveConfig(appWidgetId, currentConfig)
+                        if (isStandalone) {
+                            OutlinedButton(
+                                onClick = { isSheetOpen = true },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Show Preview")
+                            }
+                            Button(
+                                onClick = onSaveImageClick,
+                                enabled = hasData,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Save as Image")
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    isSheetOpen = true
+                                    scope.launch {
+                                        dataStore.saveConfig(appWidgetId, currentConfig)
+                                    }
+                                    isSaveEnabled = true
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Show Preview")
+                            }
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        Log.d(
+                                            "ConfigActivityLog",
+                                            "Create Widget onClick: currentConfig = $currentConfig"
+                                        )
+                                        dataStore.saveConfig(appWidgetId, currentConfig)
 
-                                    val glanceId =
-                                        GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-                                    QrWidget().update(context, glanceId)
+                                        val glanceId =
+                                            GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+                                        QrWidget().update(context, glanceId)
 
-                                    val currentSaved = dataStore.getSavedConfigs().first()
-                                    val newSaved = (currentSaved + currentConfig).distinct()
-                                    dataStore.saveConfigs(newSaved)
+                                        val currentSaved = dataStore.getSavedConfigs().first()
+                                        val newSaved = (currentSaved + currentConfig).distinct()
+                                        dataStore.saveConfigs(newSaved)
 
-                                    onConfigComplete()
-                                }
-                            },
-                            enabled = isSaveEnabled && currentConfig.data.any {
-                                when (it) {
-                                    is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                                    is QrData.Contact -> it.name.isNotBlank()
-                                    is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Create Widget")
+                                        onConfigComplete()
+                                    }
+                                },
+                                enabled = isSaveEnabled && hasData,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Create Widget")
+                            }
                         }
                     }
                 }
@@ -862,13 +980,15 @@ fun ColorPickerDialog(
 }
 
 @Composable
-fun QrCodePreview(config: QrConfig) {
+fun QrCodePreview(config: QrConfig, title: String? = "Preview") {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Preview", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
+        if (title != null) {
+            Text(title, style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         val qrBitmap = remember(config) { QrGenerator.generate(config) }
         if (qrBitmap != null) {
             Image(
