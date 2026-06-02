@@ -2,7 +2,6 @@ package com.hereliesaz.qard.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.runtime.collectAsState
@@ -18,7 +17,7 @@ import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -29,9 +28,12 @@ import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
-import com.hereliesaz.qard.ui.ConfigActivity
 
 class QrWidget : GlanceAppWidget() {
+
+    // Recompose with the exact size the launcher gives us so the QR stays crisp
+    // when the user long-presses the widget and resizes it.
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val dataStore = QrDataStore(context)
@@ -43,7 +45,9 @@ class QrWidget : GlanceAppWidget() {
             Log.d("WidgetFlow", "Config received in widget (for ID $appWidgetId): $config")
 
             if (config != null) {
-                val action = actionRunCallback<ConfigActivityAction>(
+                // Every tap is routed through WidgetTapRouter, which distinguishes
+                // single tap (open detail) from double tap (open construction).
+                val action = actionRunCallback<WidgetTapAction>(
                     parameters = actionParametersOf(
                         ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID) to appWidgetId
                     )
@@ -92,22 +96,5 @@ class QrWidget : GlanceAppWidget() {
         val bitmap = createBitmap(1, 1)
         bitmap.eraseColor(0) // Makes the bitmap transparent
         return bitmap
-    }
-}
-
-class ConfigActivityAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters,
-    ) {
-        val appWidgetId = parameters[ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID)]
-            ?: AppWidgetManager.INVALID_APPWIDGET_ID
-
-        val intent = Intent(context, ConfigActivity::class.java).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(intent)
     }
 }
