@@ -3,6 +3,7 @@ package com.hereliesaz.qard.ui
 import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,15 +39,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -56,13 +61,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,6 +83,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -94,11 +100,14 @@ import com.hereliesaz.qard.data.QrDataStore
 import com.hereliesaz.qard.data.QrDataType
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
+import com.hereliesaz.qard.ui.theme.LogoPink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrImageExporter
 import com.hereliesaz.qard.widget.QrWidget
+import com.hereliesaz.qard.widget.QrWidgetReceiver
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -117,8 +126,8 @@ class ConfigActivity : ComponentActivity() {
 
         /**
          * Launch the construction screen in standalone mode (no widget). Used by
-         * the in-app "Create QR code" flow and by double-tap-to-edit. Pass an
-         * existing [config] to edit it, or null to start from a blank code.
+         * double-tap-to-edit from a placed widget. Pass an existing [config] to
+         * edit it, or null to start from a blank code.
          */
         fun standaloneIntent(context: Context, config: QrConfig? = null): Intent =
             Intent(context, ConfigActivity::class.java).apply {
@@ -203,6 +212,52 @@ private fun shapeIcon(shape: QrShape): ImageVector = when (shape) {
     QrShape.Diamond -> Icons.Default.FavoriteBorder // Placeholder
 }
 
+private fun QrData.dataType(): QrDataType = when (this) {
+    is QrData.Links -> QrDataType.Links
+    is QrData.Contact -> QrDataType.Contact
+    is QrData.SocialMedia -> QrDataType.SocialMedia
+}
+
+private fun dataTypeLabel(type: QrDataType): String = when (type) {
+    QrDataType.Links -> "Links"
+    QrDataType.Contact -> "Contact"
+    QrDataType.SocialMedia -> "Social Media"
+}
+
+private fun dataTypeIcon(type: QrDataType): ImageVector = when (type) {
+    QrDataType.Links -> Icons.Default.Link
+    QrDataType.Contact -> Icons.Default.Person
+    QrDataType.SocialMedia -> Icons.Default.Share
+}
+
+private fun defaultDataFor(type: QrDataType): QrData = when (type) {
+    QrDataType.Links -> QrData.Links(links = listOf(""))
+    QrDataType.Contact -> QrData.Contact()
+    QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("", "")))
+}
+
+private fun replaceData(
+    config: QrConfig,
+    old: QrData,
+    new: QrData,
+    updateConfig: (QrConfig) -> Unit
+) {
+    val list = config.data.toMutableList()
+    val index = list.indexOf(old)
+    if (index != -1) {
+        list[index] = new
+        updateConfig(config.copy(data = list))
+    }
+}
+
+private fun QrConfig.hasContent(): Boolean = data.any {
+    when (it) {
+        is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+        is QrData.Contact -> it.name.isNotBlank()
+        is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigScreen(
@@ -231,27 +286,35 @@ fun ConfigScreen(
 
     var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
 
+    // The saved-list entry the current edits belong to, so repeated saves update
+    // it in place instead of piling up duplicates. Seeded with the config we
+    // opened (when editing) and re-pointed whenever the user loads a saved code.
+    var persistedSnapshot by remember { mutableStateOf(initialConfig) }
+
     // Persist the current config into the saved-configs list so it shows up in
-    // the gallery and can be reopened/edited later. When editing an existing
-    // config, update it in place instead of adding a duplicate.
+    // the Load screen and reloads later. Updates the tracked entry in place; in
+    // widget mode it also writes through to the widget's own config.
     suspend fun persistCurrentConfig() {
         val cfg = config ?: return
+        if (!cfg.hasContent()) return
         val saved = dataStore.getSavedConfigs().first().toMutableList()
-        val original = initialConfig
-        val idx = if (original != null) saved.indexOf(original) else -1
+        val previous = persistedSnapshot
+        val idx = if (previous != null) saved.indexOf(previous) else -1
         when {
             idx >= 0 -> saved[idx] = cfg
             !saved.contains(cfg) -> saved.add(cfg)
         }
         dataStore.saveConfigs(saved)
+        persistedSnapshot = cfg
+        if (!isStandalone) {
+            dataStore.saveConfig(appWidgetId, cfg)
+        }
     }
 
-    fun saveAndFinish() {
-        if (config == null) return
-        scope.launch {
-            persistCurrentConfig()
-            onConfigComplete()
-        }
+    // Loading a saved code makes it the entry future edits update in place.
+    val loadSavedConfig = { cfg: QrConfig ->
+        persistedSnapshot = cfg
+        config = cfg
     }
 
     fun saveCurrentAsImage() {
@@ -296,7 +359,8 @@ fun ConfigScreen(
         }
     }
 
-    fun createWidget() {
+    // Finalize the widget that was being configured via the launcher's picker.
+    fun finalizeWidget() {
         val cfg = config ?: return
         scope.launch {
             dataStore.saveConfig(appWidgetId, cfg)
@@ -304,6 +368,29 @@ fun ConfigScreen(
             QrWidget().update(context, glanceId)
             persistCurrentConfig()
             onConfigComplete()
+        }
+    }
+
+    // Pin a brand-new widget to the home screen — the same flow as the launcher's
+    // widget picker "Add" button. The launcher drops the widget in an open spot
+    // with its resize bounding box; the new widget's id arrives in the pin-success
+    // broadcast handled by QrWidgetReceiver.
+    fun pinCurrentAsWidget() {
+        val cfg = config ?: return
+        val manager = AppWidgetManager.getInstance(context)
+        if (!manager.isRequestPinAppWidgetSupported) {
+            Toast.makeText(
+                context,
+                "Your launcher doesn't support adding widgets this way.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        scope.launch {
+            persistCurrentConfig()
+            dataStore.savePendingPinConfig(cfg)
+            val provider = ComponentName(context, QrWidgetReceiver::class.java)
+            manager.requestPinAppWidget(provider, null, QrWidgetReceiver.pinSuccessCallback(context))
         }
     }
 
@@ -331,92 +418,66 @@ fun ConfigScreen(
         return
     }
 
-    val hasData = currentConfig.data.any {
-        when (it) {
-            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-            is QrData.Contact -> it.name.isNotBlank()
-            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
-        }
+    // Auto-save: whatever the user enters is persisted shortly after they stop
+    // typing, so there's no Save button to remember to press.
+    LaunchedEffect(currentConfig) {
+        if (!currentConfig.hasContent()) return@LaunchedEffect
+        delay(400)
+        persistCurrentConfig()
     }
+
+    val hasData = currentConfig.hasContent()
 
     val navController = rememberNavController()
 
     AzHostActivityLayout(navController = navController) {
+        // Selected rail item highlight — logo pink so it stands out on the dark rail.
+        azTheme(activeColor = LogoPink)
+        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen)
         azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit)
-        azRailItem(id = "shape", text = "Shape", route = "shape", content = Icons.Default.Category)
-        azRailItem(id = "color", text = "Color", route = "color", content = Icons.Default.Palette)
         azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome)
-        azRailItem(id = "saved", text = "Saved", route = "saved", content = Icons.Default.Bookmark)
+        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette)
         azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility)
+        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save)
 
         onscreen {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) {
-                    AzNavHost(startDestination = "data") {
-                        composable("data") {
-                            DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
-                        }
-                        composable("shape") {
-                            ShapeScreen(currentConfig = currentConfig, updateConfig = updateConfig)
-                        }
-                        composable("color") {
-                            ColorScreen(
-                                currentConfig = currentConfig,
-                                updateConfig = updateConfig,
-                                showForegroundColorPicker = { showForegroundColorPicker = true },
-                                showBackgroundColorPicker = { showBackgroundColorPicker = true },
-                                showGradientColorPicker1 = { showGradientColorPicker1 = true },
-                                showGradientColorPicker2 = { showGradientColorPicker2 = true },
-                                showFgGradientColorPicker1 = { showFgGradientColorPicker1 = true },
-                                showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
-                            )
-                        }
-                        composable("presets") {
-                            PresetsScreen(
-                                presets = presets,
-                                currentConfig = currentConfig,
-                                updateConfig = updateConfig
-                            )
-                        }
-                        composable("saved") {
-                            SavedScreen(dataStore = dataStore, updateConfig = updateConfig)
-                        }
-                        composable("preview") {
-                            PreviewScreen(config = currentConfig)
-                        }
-                    }
+            AzNavHost(startDestination = "data") {
+                composable("load") {
+                    LoadScreen(dataStore = dataStore, updateConfig = loadSavedConfig)
                 }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    if (isStandalone) {
-                        OutlinedButton(
-                            onClick = onSaveImageClick,
-                            enabled = hasData,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Save Image")
-                        }
-                        Button(
-                            onClick = { saveAndFinish() },
-                            enabled = hasData,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Save")
-                        }
-                    } else {
-                        Button(
-                            onClick = { createWidget() },
-                            enabled = hasData,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Create Widget")
-                        }
-                    }
+                composable("data") {
+                    DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
+                }
+                composable("presets") {
+                    PresetsScreen(
+                        presets = presets,
+                        currentConfig = currentConfig,
+                        updateConfig = updateConfig
+                    )
+                }
+                composable("design") {
+                    DesignScreen(
+                        currentConfig = currentConfig,
+                        updateConfig = updateConfig,
+                        showForegroundColorPicker = { showForegroundColorPicker = true },
+                        showBackgroundColorPicker = { showBackgroundColorPicker = true },
+                        showGradientColorPicker1 = { showGradientColorPicker1 = true },
+                        showGradientColorPicker2 = { showGradientColorPicker2 = true },
+                        showFgGradientColorPicker1 = { showFgGradientColorPicker1 = true },
+                        showFgGradientColorPicker2 = { showFgGradientColorPicker2 = true }
+                    )
+                }
+                composable("preview") {
+                    PreviewScreen(config = currentConfig)
+                }
+                composable("save") {
+                    SaveScreen(
+                        config = currentConfig,
+                        hasData = hasData,
+                        isStandalone = isStandalone,
+                        onSaveImage = onSaveImageClick,
+                        onCreateWidget = { if (isStandalone) pinCurrentAsWidget() else finalizeWidget() }
+                    )
                 }
             }
         }
@@ -509,113 +570,108 @@ fun DataScreen(
 ) {
     Column(
         modifier = Modifier
+            .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        Text("Data", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            "Flip on the kinds of data you want to encode and fill them in.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        // Every data type is shown up front as its own section — no need to press
+        // anything to discover what can be added.
+        QrDataType.entries.forEach { type ->
+            DataTypeSection(
+                type = type,
+                currentConfig = currentConfig,
+                updateConfig = updateConfig
+            )
+        }
+    }
+}
+
+@Composable
+private fun DataTypeSection(
+    type: QrDataType,
+    currentConfig: QrConfig,
+    updateConfig: (QrConfig) -> Unit
+) {
+    val existing = currentConfig.data.firstOrNull { it.dataType() == type }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Data", style = MaterialTheme.typography.headlineMedium)
-
-                val selectedTypes = remember(currentConfig.data) {
-                    currentConfig.data.map {
-                        when (it) {
-                            is QrData.Links -> QrDataType.Links
-                            is QrData.Contact -> QrDataType.Contact
-                            is QrData.SocialMedia -> QrDataType.SocialMedia
-                        }
-                    }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(imageVector = dataTypeIcon(type), contentDescription = null)
+                    Text(dataTypeLabel(type), style = MaterialTheme.typography.titleMedium)
                 }
-
-                MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    QrDataType.entries.forEachIndexed { index, type ->
-                        SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = QrDataType.entries.size
-                            ),
-                            onCheckedChange = { isChecked ->
-                                val currentData = currentConfig.data.toMutableList()
-                                if (isChecked) {
-                                    if (selectedTypes.none { it == type }) {
-                                        val newData = when (type) {
-                                            QrDataType.Links -> QrData.Links(links = listOf(""))
-                                            QrDataType.Contact -> QrData.Contact()
-                                            QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("","")))
-                                        }
-                                        currentData.add(newData)
-                                    }
-                                } else {
-                                    currentData.removeAll {
-                                        when(it) {
-                                            is QrData.Links -> type == QrDataType.Links
-                                            is QrData.Contact -> type == QrDataType.Contact
-                                            is QrData.SocialMedia -> type == QrDataType.SocialMedia
-                                        }
-                                    }
-                                }
-                                updateConfig(currentConfig.copy(data = currentData))
-                            },
-                            checked = type in selectedTypes
-                        ) {
-                            Text(type.name)
+                Switch(
+                    checked = existing != null,
+                    onCheckedChange = { isOn ->
+                        val data = currentConfig.data.toMutableList()
+                        if (isOn) {
+                            if (existing == null) data.add(defaultDataFor(type))
+                        } else {
+                            data.removeAll { it.dataType() == type }
                         }
+                        updateConfig(currentConfig.copy(data = data))
                     }
+                )
+            }
+            when (existing) {
+                is QrData.Links -> LinksForm(links = existing) {
+                    replaceData(currentConfig, existing, it, updateConfig)
                 }
-
-                currentConfig.data.forEach { data ->
-                    when (data) {
-                        is QrData.Links -> LinksForm(links = data) { newLinks ->
-                            val newDataList = currentConfig.data.toMutableList()
-                            val index = newDataList.indexOf(data)
-                            if (index != -1) {
-                                newDataList[index] = newLinks
-                                updateConfig(currentConfig.copy(data = newDataList))
-                            }
-                        }
-                        is QrData.Contact -> ContactForm(contact = data) { newContact ->
-                            val newDataList = currentConfig.data.toMutableList()
-                            val index = newDataList.indexOf(data)
-                            if (index != -1) {
-                                newDataList[index] = newContact
-                                updateConfig(currentConfig.copy(data = newDataList))
-                            }
-                        }
-                        is QrData.SocialMedia -> SocialMediaForm(socialMedia = data) { newSocialMedia ->
-                            val newDataList = currentConfig.data.toMutableList()
-                            val index = newDataList.indexOf(data)
-                            if (index != -1) {
-                                newDataList[index] = newSocialMedia
-                                updateConfig(currentConfig.copy(data = newDataList))
-                            }
-                        }
-                    }
+                is QrData.Contact -> ContactForm(contact = existing) {
+                    replaceData(currentConfig, existing, it, updateConfig)
                 }
+                is QrData.SocialMedia -> SocialMediaForm(socialMedia = existing) {
+                    replaceData(currentConfig, existing, it, updateConfig)
+                }
+                null -> { /* section is off — nothing to show */ }
             }
         }
     }
 }
 
 @Composable
-fun ShapeScreen(
+fun DesignScreen(
     currentConfig: QrConfig,
-    updateConfig: (QrConfig) -> Unit
+    updateConfig: (QrConfig) -> Unit,
+    showForegroundColorPicker: () -> Unit,
+    showBackgroundColorPicker: () -> Unit,
+    showGradientColorPicker1: () -> Unit,
+    showGradientColorPicker2: () -> Unit,
+    showFgGradientColorPicker1: () -> Unit,
+    showFgGradientColorPicker2: () -> Unit
 ) {
     Column(
         modifier = Modifier
+            .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Text("Design", style = MaterialTheme.typography.headlineMedium)
+
+        // Shape
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Shape", style = MaterialTheme.typography.headlineMedium)
+                Text("Shape", style = MaterialTheme.typography.titleMedium)
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -645,48 +701,14 @@ fun ShapeScreen(
                 }
             }
         }
-    }
-}
 
-@Composable
-fun ColorScreen(
-    currentConfig: QrConfig,
-    updateConfig: (QrConfig) -> Unit,
-    showForegroundColorPicker: () -> Unit,
-    showBackgroundColorPicker: () -> Unit,
-    showGradientColorPicker1: () -> Unit,
-    showGradientColorPicker2: () -> Unit,
-    showFgGradientColorPicker1: () -> Unit,
-    showFgGradientColorPicker2: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+        // Colour
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Color", style = MaterialTheme.typography.headlineMedium)
-
-                Text("Background Type", style = MaterialTheme.typography.bodyLarge)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    BackgroundType.entries.forEachIndexed { index, backgroundType ->
-                        SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = BackgroundType.entries.size
-                            ),
-                            onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
-                            selected = currentConfig.backgroundType == backgroundType
-                        ) {
-                            Text(backgroundType.name)
-                        }
-                    }
-                }
+                Text("Colour", style = MaterialTheme.typography.titleMedium)
 
                 Text("Foreground Type", style = MaterialTheme.typography.bodyLarge)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -724,6 +746,22 @@ fun ColorScreen(
                                 color = currentConfig.foregroundGradientColors.getOrElse(1) { 0xFF0000FF.toInt() },
                                 onClick = showFgGradientColorPicker2
                             )
+                        }
+                    }
+                }
+
+                Text("Background Type", style = MaterialTheme.typography.bodyLarge)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    BackgroundType.entries.forEachIndexed { index, backgroundType ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = BackgroundType.entries.size
+                            ),
+                            onClick = { updateConfig(currentConfig.copy(backgroundType = backgroundType)) },
+                            selected = currentConfig.backgroundType == backgroundType
+                        ) {
+                            Text(backgroundType.name)
                         }
                     }
                 }
@@ -810,7 +848,7 @@ fun PresetsScreen(
 }
 
 @Composable
-fun SavedScreen(
+fun LoadScreen(
     dataStore: QrDataStore,
     updateConfig: (QrConfig) -> Unit
 ) {
@@ -824,7 +862,7 @@ fun SavedScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Saved", style = MaterialTheme.typography.headlineMedium)
+        Text("Load", style = MaterialTheme.typography.headlineMedium)
         if (savedConfigs.isEmpty()) {
             Text(
                 "Codes you save will appear here.",
@@ -863,7 +901,48 @@ fun PreviewScreen(config: QrConfig) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        QrCodePreview(config = config, title = "Preview", imageSize = 240.dp)
+        QrCodePreview(config = config, title = "Preview", imageSize = 280.dp)
+    }
+}
+
+@Composable
+fun SaveScreen(
+    config: QrConfig,
+    hasData: Boolean,
+    isStandalone: Boolean,
+    onSaveImage: () -> Unit,
+    onCreateWidget: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Save", style = MaterialTheme.typography.headlineMedium)
+        QrCodePreview(config = config, title = null, imageSize = 220.dp)
+        Text(
+            "Your code is saved automatically and shows up under Load. " +
+                "Drop it on your home screen as a widget, or export it as an image.",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+        Button(
+            onClick = onCreateWidget,
+            enabled = hasData,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isStandalone) "Create widget" else "Add to home screen")
+        }
+        OutlinedButton(
+            onClick = onSaveImage,
+            enabled = hasData,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Save as image")
+        }
     }
 }
 
