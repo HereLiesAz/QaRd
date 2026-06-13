@@ -88,6 +88,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
@@ -100,6 +101,9 @@ import com.hereliesaz.qard.data.QrDataStore
 import com.hereliesaz.qard.data.QrDataType
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
+import com.hereliesaz.qard.ads.AdBanner
+import com.hereliesaz.qard.ads.PresetsAdBanner
+import com.hereliesaz.qard.ads.rememberInterstitialController
 import com.hereliesaz.qard.ui.theme.LogoPink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
@@ -430,6 +434,25 @@ fun ConfigScreen(
 
     val navController = rememberNavController()
 
+    // Show a full-screen interstitial when the user opens the Save rail item.
+    // (No-op in the ad-free foss build.)
+    // Unwrap any ContextWrapper (e.g. Compose's ContextThemeWrapper) to reach the Activity.
+    val activity = remember(context) {
+        var ctx: Context = context
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) break
+            ctx = ctx.baseContext
+        }
+        ctx as? Activity
+    }
+    val interstitial = rememberInterstitialController()
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == "save") {
+            activity?.let { interstitial.showIfReady(it) }
+        }
+    }
+
     AzHostActivityLayout(navController = navController) {
         // Selected rail item highlight — logo pink so it stands out on the dark rail.
         azTheme(activeColor = LogoPink)
@@ -441,7 +464,9 @@ fun ConfigScreen(
         azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save)
 
         onscreen {
-            AzNavHost(startDestination = "data") {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    AzNavHost(startDestination = "data") {
                 composable("load") {
                     LoadScreen(dataStore = dataStore, updateConfig = loadSavedConfig)
                 }
@@ -479,6 +504,10 @@ fun ConfigScreen(
                         onCreateWidget = { if (isStandalone) pinCurrentAsWidget() else finalizeWidget() }
                     )
                 }
+            }
+                }
+                // Banner pinned to the bottom of every editor screen (play flavor only).
+                AdBanner()
             }
         }
     }
@@ -825,6 +854,8 @@ fun PresetsScreen(
             "Tap a preset to apply its colours and shape to your data.",
             style = MaterialTheme.typography.bodyMedium
         )
+        // Presets-screen banner ("qard-presets-ad"); no-op in the foss build.
+        PresetsAdBanner()
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -60,6 +60,21 @@ android {
         }
     }
 
+    // Two distributions: "foss" is the ad-free build the repo's CI compiles and
+    // publishes to GitHub Releases; "play" carries the AdMob banner + interstitial
+    // for the Play Store. Ad SDK, ad code, and the AdMob manifest entries live only
+    // in the play flavor (src/play), so the foss artifact contains no ads at all.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("foss") {
+            dimension = "distribution"
+            isDefault = true
+        }
+        create("play") {
+            dimension = "distribution"
+        }
+    }
+
     // Release signing config sourced from local.properties (KEYSTORE points to
     // the .jks file; KEYSTORE_SECRET / KEY_SECRET / KEY_ALIAS hold the
     // credentials). Only registered when the keystore file is actually present
@@ -150,6 +165,9 @@ dependencies {
 
     // Menu
     implementation(libs.aznavrail)
+
+    // Google AdMob — play flavor only, so the foss build pulls in no ad SDK.
+    "playImplementation"(libs.play.services.ads)
 
     // Testing
     testImplementation(libs.junit)

@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.hereliesaz.qard.ads.AdBanner
 import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
@@ -139,7 +140,8 @@ fun QrCodeDetailScreen(config: QrConfig, onBack: () -> Unit) {
                     }
                 }
             )
-        }
+        },
+        bottomBar = { AdBanner() }
     ) { padding ->
         Column(
             modifier = Modifier
