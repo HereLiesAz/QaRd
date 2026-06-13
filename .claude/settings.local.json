@@ -10,7 +10,13 @@
       "Bash(mkdir:*)",
       "Bash(jar xf:*)",
       "Bash(xargs cat:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(ls -la ~/.android/ 2>/dev/null)",
+      "Bash(ls -la \"/g/My Drive/az_apk_keystore.jks\" 2>&1)",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\")",
+      "Bash(gh run *)",
+      "Bash(curl -s \"https://dl.google.com/dl/android/maven2/com/android/application/com.android.application.gradle.plugin/maven-metadata.xml\")",
+      "Bash('/c/Program Files/Android/Android Studio/jbr/bin/jarsigner' -verify -verbose -certs '/g/My Drive/QaRd/app/build/outputs/bundle/release/app-release.aab')"
     ]
   }
 }

@@ -60,13 +60,33 @@ android {
         }
     }
 
+    // Release signing config sourced from local.properties (KEYSTORE points to
+    // the .jks file; KEYSTORE_SECRET / KEY_SECRET / KEY_ALIAS hold the
+    // credentials). Only registered when the keystore file is actually present
+    // so CI (which injects signing via -Pandroid.injected.signing.* flags) and
+    // contributors without the keystore can still build.
+    val keystorePath = localProperties.getProperty("KEYSTORE")
+    val releaseKeystore = keystorePath?.let { file(it) }
+    val hasReleaseKeystore = releaseKeystore?.exists() == true
+    if (hasReleaseKeystore) {
+        signingConfigs.create("release") {
+            storeFile = releaseKeystore
+            storePassword = localProperties.getProperty("KEYSTORE_SECRET")
+            keyAlias = localProperties.getProperty("KEY_ALIAS")
+            keyPassword = localProperties.getProperty("KEY_SECRET")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Sign release builds with the debug key so the generated
-            // app-release.apk can be sideloaded. Replace this with a dedicated
-            // upload/release keystore before publishing to the Play Store.
-            signingConfig = signingConfigs.getByName("debug")
+            // Sign with the release keystore from local.properties when available,
+            // otherwise fall back to the debug key so the build still succeeds.
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
