@@ -10,8 +10,11 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.updateAll
 import com.hereliesaz.qard.data.QrDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 class QrWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = QrWidget()
@@ -36,13 +39,20 @@ class QrWidgetReceiver : GlanceAppWidgetReceiver() {
         )
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
 
-        runBlocking {
-            val store = QrDataStore(context)
-            val config = store.takePendingPinConfig() ?: return@runBlocking
-            store.saveConfig(appWidgetId, config)
-            val saved = store.getSavedConfigs().first()
-            store.saveConfigs((saved + config).distinct())
-            QrWidget().updateAll(context)
+        // Do the DataStore I/O off the main thread; goAsync() keeps the receiver
+        // alive until the coroutine finishes so we don't risk an ANR.
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val store = QrDataStore(context)
+                val config = store.takePendingPinConfig() ?: return@launch
+                store.saveConfig(appWidgetId, config)
+                val saved = store.getSavedConfigs().first()
+                store.saveConfigs((saved + config).distinct())
+                QrWidget().updateAll(context)
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

@@ -934,7 +934,7 @@ fun SaveScreen(
             enabled = hasData,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (isStandalone) "Create widget" else "Add to home screen")
+            Text(if (isStandalone) "Create widget" else "Save widget")
         }
         OutlinedButton(
             onClick = onSaveImage,
