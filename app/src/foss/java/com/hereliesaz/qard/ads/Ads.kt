@@ -21,6 +21,11 @@ fun AdBanner(modifier: Modifier = Modifier) {
     // No ads in the FOSS build — render nothing.
 }
 
+@Composable
+fun PresetsAdBanner(modifier: Modifier = Modifier) {
+    // No ads in the FOSS build — render nothing.
+}
+
 class InterstitialController {
     fun showIfReady(activity: Activity) {
         // No ads in the FOSS build.

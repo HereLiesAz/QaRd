@@ -102,6 +102,7 @@ import com.hereliesaz.qard.data.QrDataType
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.ads.AdBanner
+import com.hereliesaz.qard.ads.PresetsAdBanner
 import com.hereliesaz.qard.ads.rememberInterstitialController
 import com.hereliesaz.qard.ui.theme.LogoPink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
@@ -853,6 +854,8 @@ fun PresetsScreen(
             "Tap a preset to apply its colours and shape to your data.",
             style = MaterialTheme.typography.bodyMedium
         )
+        // Presets-screen banner ("qard-presets-ad"); no-op in the foss build.
+        PresetsAdBanner()
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
