@@ -3,6 +3,8 @@ package com.hereliesaz.qard.ads
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -19,10 +21,10 @@ import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
-// Google's official TEST ad unit IDs. Replace with your real AdMob unit IDs before
-// publishing (the AdMob app id lives in src/play/AndroidManifest.xml). Using the
-// test IDs in development is required by AdMob policy to avoid invalid traffic.
-private const val BANNER_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
+// Real AdMob unit IDs (the AdMob app id lives in src/play/AndroidManifest.xml).
+// BANNER_UNIT_ID is the "qard-bottom-banner" unit. INTERSTITIAL_UNIT_ID is still
+// Google's official TEST unit id — replace it once a real interstitial unit exists.
+private const val BANNER_UNIT_ID = "ca-app-pub-7304740804770627/1570507628"
 private const val INTERSTITIAL_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
 
 fun initAds(app: Application) {
@@ -40,24 +42,31 @@ fun AdBanner(modifier: Modifier = Modifier) {
                 adUnitId = BANNER_UNIT_ID
                 loadAd(AdRequest.Builder().build())
             }
-        }
+        },
+        // Release the AdView when it leaves composition to avoid a memory leak.
+        onRelease = { adView -> adView.destroy() }
     )
 }
 
 /**
  * Keeps a single interstitial preloaded and reloads it after each show, so the
- * Save screen can present one immediately on demand.
+ * Save screen can present one immediately on demand. Holds the application
+ * context (never an Activity) so it's safe to retain across configuration changes.
  */
-class InterstitialController(private val context: Context) {
+class InterstitialController(context: Context) {
+    private val appContext = context.applicationContext
+    private val handler = Handler(Looper.getMainLooper())
     private var ad: InterstitialAd? = null
+    private var retryAttempt = 0
 
     fun load() {
         InterstitialAd.load(
-            context,
+            appContext,
             INTERSTITIAL_UNIT_ID,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(loaded: InterstitialAd) {
+                    retryAttempt = 0
                     loaded.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
                             ad = null
@@ -74,6 +83,13 @@ class InterstitialController(private val context: Context) {
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     ad = null
+                    // Retry with capped exponential backoff so a transient network
+                    // failure doesn't disable interstitials for the whole session.
+                    if (retryAttempt < MAX_RETRIES) {
+                        retryAttempt++
+                        val delayMs = (1000L shl retryAttempt).coerceAtMost(60_000L)
+                        handler.postDelayed({ load() }, delayMs)
+                    }
                 }
             }
         )
@@ -82,10 +98,15 @@ class InterstitialController(private val context: Context) {
     fun showIfReady(activity: Activity) {
         ad?.show(activity)
     }
+
+    companion object {
+        private const val MAX_RETRIES = 5
+    }
 }
 
 @Composable
 fun rememberInterstitialController(): InterstitialController {
-    val context = LocalContext.current
-    return remember { InterstitialController(context).apply { load() } }
+    // Use the application context so the remembered controller never retains an Activity.
+    val context = LocalContext.current.applicationContext
+    return remember(context) { InterstitialController(context).apply { load() } }
 }

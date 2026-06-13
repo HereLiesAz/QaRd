@@ -435,7 +435,15 @@ fun ConfigScreen(
 
     // Show a full-screen interstitial when the user opens the Save rail item.
     // (No-op in the ad-free foss build.)
-    val activity = context as? Activity
+    // Unwrap any ContextWrapper (e.g. Compose's ContextThemeWrapper) to reach the Activity.
+    val activity = remember(context) {
+        var ctx: Context = context
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is Activity) break
+            ctx = ctx.baseContext
+        }
+        ctx as? Activity
+    }
     val interstitial = rememberInterstitialController()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     LaunchedEffect(currentRoute) {

@@ -5,10 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application>
-        <!-- Google's official TEST AdMob app id. Replace with your real app id
-             (ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY) before publishing. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-7304740804770627~8885554152" />
     </application>
 </manifest>
