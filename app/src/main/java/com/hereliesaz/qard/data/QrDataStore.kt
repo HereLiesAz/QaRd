@@ -18,6 +18,7 @@ class QrDataStore(private val context: Context) {
     companion object {
         private fun qrConfigKey(appWidgetId: Int) = stringPreferencesKey("qr_config_$appWidgetId")
         private val SAVED_CONFIGS_KEY = stringPreferencesKey("saved_qr_configs_list")
+        private val PENDING_PIN_CONFIG_KEY = stringPreferencesKey("pending_pin_config")
     }
 
     fun getConfig(appWidgetId: Int): Flow<QrConfig> {
@@ -77,5 +78,33 @@ class QrDataStore(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[SAVED_CONFIGS_KEY] = Json.encodeToString(configs)
         }
+    }
+
+    /**
+     * Stash the config the user wants to pin as a widget. The widget's appWidgetId
+     * isn't known until the launcher actually places it, so the pin-success receiver
+     * reads this back and assigns it to the new widget.
+     */
+    suspend fun savePendingPinConfig(config: QrConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[PENDING_PIN_CONFIG_KEY] = Json.encodeToString(config)
+        }
+    }
+
+    /** Reads and clears the stashed pin config, or null if none is pending. */
+    suspend fun takePendingPinConfig(): QrConfig? {
+        var result: QrConfig? = null
+        context.dataStore.edit { preferences ->
+            val jsonString = preferences[PENDING_PIN_CONFIG_KEY]
+            if (jsonString != null) {
+                result = try {
+                    Json.decodeFromString<QrConfig>(jsonString)
+                } catch (e: Exception) {
+                    null
+                }
+                preferences.remove(PENDING_PIN_CONFIG_KEY)
+            }
+        }
+        return result
     }
 }
