@@ -22,10 +22,9 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 // Real AdMob unit IDs (the AdMob app id lives in src/play/AndroidManifest.xml).
-// BANNER_UNIT_ID is the "qard-bottom-banner" unit. INTERSTITIAL_UNIT_ID is still
-// Google's official TEST unit id — replace it once a real interstitial unit exists.
+// BANNER_UNIT_ID = "qard-bottom-banner"; INTERSTITIAL_UNIT_ID = "qard-interstitial".
 private const val BANNER_UNIT_ID = "ca-app-pub-7304740804770627/1570507628"
-private const val INTERSTITIAL_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
+private const val INTERSTITIAL_UNIT_ID = "ca-app-pub-7304740804770627/6036324683"
 
 fun initAds(app: Application) {
     MobileAds.initialize(app) {}
