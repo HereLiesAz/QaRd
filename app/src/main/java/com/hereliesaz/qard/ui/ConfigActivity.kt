@@ -455,13 +455,14 @@ fun ConfigScreen(
 
     AzHostActivityLayout(navController = navController) {
         // Selected rail item highlight — logo pink so it stands out on the dark rail.
+        // Inactive rail items are white; the active item is highlighted with LogoPink.
         azTheme(activeColor = LogoPink)
-        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen)
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit)
-        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome)
-        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette)
-        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility)
-        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save)
+        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, color = Color.White, textColor = Color.White)
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, color = Color.White, textColor = Color.White)
+        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, color = Color.White, textColor = Color.White)
+        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, color = Color.White, textColor = Color.White)
+        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, color = Color.White, textColor = Color.White)
+        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, color = Color.White, textColor = Color.White)
 
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -604,7 +605,6 @@ fun DataScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Data", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Flip on the kinds of data you want to encode and fill them in.",
             style = MaterialTheme.typography.bodyMedium
@@ -692,8 +692,6 @@ fun DesignScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Design", style = MaterialTheme.typography.headlineMedium)
-
         // Shape
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -849,7 +847,6 @@ fun PresetsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Presets", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Tap a preset to apply its colours and shape to your data.",
             style = MaterialTheme.typography.bodyMedium
@@ -893,7 +890,6 @@ fun LoadScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Load", style = MaterialTheme.typography.headlineMedium)
         if (savedConfigs.isEmpty()) {
             Text(
                 "Codes you save will appear here.",
@@ -932,7 +928,7 @@ fun PreviewScreen(config: QrConfig) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        QrCodePreview(config = config, title = "Preview", imageSize = 280.dp)
+        QrCodePreview(config = config, title = null, imageSize = 280.dp)
     }
 }
 
@@ -952,7 +948,6 @@ fun SaveScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Save", style = MaterialTheme.typography.headlineMedium)
         QrCodePreview(config = config, title = null, imageSize = 220.dp)
         Text(
             "Your code is saved automatically and shows up under Load. " +
