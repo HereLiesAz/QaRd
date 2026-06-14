@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.kotlin.compose)
 }
@@ -45,12 +44,12 @@ val currentVersionName = "$verMajor.$verMinor.$verPatch"
 
 android {
     namespace = "com.hereliesaz.qard"
-    compileSdk = 35 // SDK 37 is not yet stable/standard; changing to 35 for better compatibility
+    compileSdk = 37 // SDK 37 is not yet stable/standard; changing to 35 for better compatibility
 
     defaultConfig {
         applicationId = "com.hereliesaz.qard"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = currentVersionCode
         versionName = currentVersionName
 
@@ -179,3 +178,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.androidx.constraintlayout)
+}
