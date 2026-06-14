@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -98,35 +100,44 @@ private fun WidgetMenu(appWidgetId: Int, onClose: () -> Unit) {
                 )
 
                 val cfg = config
-                val primary = cfg?.let { primaryAction(it) }
-                if (primary != null) {
-                    MenuRow(Icons.Default.OpenInNew, primary.label) {
-                        primary.run(context)
+                if (cfg == null) {
+                    // Config still loading — avoid acting on a null (blank) config.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    primaryAction(cfg)?.let { primary ->
+                        MenuRow(Icons.Default.OpenInNew, primary.label) {
+                            primary.run(context)
+                            onClose()
+                        }
+                    }
+                    MenuRow(Icons.Default.Info, "View details") {
+                        context.startActivity(
+                            DetailActivity.widgetIntent(context, appWidgetId)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
                         onClose()
                     }
-                }
-                MenuRow(Icons.Default.Info, "View details") {
-                    context.startActivity(
-                        DetailActivity.widgetIntent(context, appWidgetId)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                    onClose()
-                }
-                MenuRow(Icons.Default.Edit, "Edit") {
-                    val intent = if (cfg != null) {
-                        ConfigActivity.standaloneIntent(context, cfg)
-                    } else {
-                        ConfigActivity.standaloneIntent(context)
+                    MenuRow(Icons.Default.Edit, "Edit") {
+                        context.startActivity(
+                            ConfigActivity.standaloneIntent(context, cfg)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                        onClose()
                     }
-                    context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    onClose()
-                }
-                MenuRow(Icons.Default.Home, "Open QaRd app") {
-                    context.startActivity(
-                        Intent(context, MainActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                    onClose()
+                    MenuRow(Icons.Default.Home, "Open QaRd app") {
+                        context.startActivity(
+                            Intent(context, MainActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                        onClose()
+                    }
                 }
             }
         }
