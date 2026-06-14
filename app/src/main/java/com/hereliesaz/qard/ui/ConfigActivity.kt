@@ -479,7 +479,19 @@ fun ConfigScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     AzNavHost(startDestination = "load") {
                 composable("load") {
-                    LoadScreen(dataStore = dataStore, updateConfig = loadSavedConfig)
+                    LoadScreen(
+                        dataStore = dataStore,
+                        currentConfig = currentConfig,
+                        onLoad = { cfg ->
+                            loadSavedConfig(cfg)
+                            // Jump to Data so the repopulated fields are visible,
+                            // keeping the back stack clean.
+                            navController.navigate("data") {
+                                popUpTo("load")
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
                 composable("data") {
                     DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
@@ -892,7 +904,8 @@ fun PresetsScreen(
 @Composable
 fun LoadScreen(
     dataStore: QrDataStore,
-    updateConfig: (QrConfig) -> Unit
+    currentConfig: QrConfig,
+    onLoad: (QrConfig) -> Unit
 ) {
     var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
     LaunchedEffect(key1 = Unit) {
@@ -921,7 +934,18 @@ fun LoadScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 gridItems(savedConfigs) { savedConfig ->
-                    Card(onClick = { updateConfig(savedConfig) }) {
+                    val isSelected = savedConfig == currentConfig
+                    Card(
+                        onClick = { onLoad(savedConfig) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ),
+                        border = if (isSelected) BorderStroke(2.dp, LogoPink) else null
+                    ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = savedConfig, title = null, imageSize = 96.dp)
                         }
