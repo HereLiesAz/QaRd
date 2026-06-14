@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
@@ -85,10 +84,20 @@ class QrDataStore(private val context: Context) {
         }
     }
 
-    /** Removes a config from the saved-configs list. */
+    /** Removes a config from the saved-configs list (atomic read-modify-write). */
     suspend fun deleteSavedConfig(config: QrConfig) {
-        val current = getSavedConfigs().first()
-        saveConfigs(current.filterNot { it == config })
+        context.dataStore.edit { preferences ->
+            val jsonString = preferences[SAVED_CONFIGS_KEY] ?: return@edit
+            val updated = try {
+                // Migrate so a legacy-shaped stored entry still matches the migrated UI config.
+                json.decodeFromString<List<QrConfig>>(jsonString)
+                    .map { it.migrated() }
+                    .filterNot { it == config }
+            } catch (e: Exception) {
+                return@edit
+            }
+            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(updated)
+        }
     }
 
     /**

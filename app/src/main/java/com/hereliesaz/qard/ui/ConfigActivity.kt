@@ -85,6 +85,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
@@ -950,10 +951,12 @@ fun LoadScreen(
                             }
                         ),
                         border = if (isSelected) BorderStroke(2.dp, LogoPink) else null,
-                        modifier = Modifier.combinedClickable(
-                            onClick = { onLoad(savedConfig) },
-                            onLongClick = { pendingDelete = savedConfig }
-                        )
+                        modifier = Modifier
+                            .clip(CardDefaults.shape)
+                            .combinedClickable(
+                                onClick = { onLoad(savedConfig) },
+                                onLongClick = { pendingDelete = savedConfig }
+                            )
                     ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = savedConfig, title = null, imageSize = 96.dp)
