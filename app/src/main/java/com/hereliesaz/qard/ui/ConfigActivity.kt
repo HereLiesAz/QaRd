@@ -604,7 +604,6 @@ fun DataScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Data", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Flip on the kinds of data you want to encode and fill them in.",
             style = MaterialTheme.typography.bodyMedium
@@ -692,8 +691,6 @@ fun DesignScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Design", style = MaterialTheme.typography.headlineMedium)
-
         // Shape
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -849,7 +846,6 @@ fun PresetsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Presets", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Tap a preset to apply its colours and shape to your data.",
             style = MaterialTheme.typography.bodyMedium
@@ -893,7 +889,6 @@ fun LoadScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Load", style = MaterialTheme.typography.headlineMedium)
         if (savedConfigs.isEmpty()) {
             Text(
                 "Codes you save will appear here.",
@@ -932,7 +927,7 @@ fun PreviewScreen(config: QrConfig) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        QrCodePreview(config = config, title = "Preview", imageSize = 280.dp)
+        QrCodePreview(config = config, title = null, imageSize = 280.dp)
     }
 }
 
@@ -952,7 +947,6 @@ fun SaveScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Save", style = MaterialTheme.typography.headlineMedium)
         QrCodePreview(config = config, title = null, imageSize = 220.dp)
         Text(
             "Your code is saved automatically and shows up under Load. " +
