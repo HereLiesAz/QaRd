@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.kotlin.compose)
 }
@@ -120,6 +119,8 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildToolsVersion = "36.0.0"
+    ndkVersion = "28.2.13676358"
 }
 
 kotlin {
