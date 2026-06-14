@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
@@ -477,6 +478,15 @@ fun ConfigScreen(
         azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, color = Color.White, textColor = Color.White)
         azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, color = Color.White, textColor = Color.White)
         azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, color = Color.White, textColor = Color.White)
+        // Launches the standalone "pass a file on" flow (same-Wi-Fi hand-off).
+        azRailItem(
+            id = "send",
+            text = "Send",
+            content = Icons.Default.Send,
+            color = Color.White,
+            textColor = Color.White,
+            onClick = { context.startActivity(Intent(context, SendFileActivity::class.java)) }
+        )
 
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {

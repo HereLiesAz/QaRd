@@ -9,6 +9,12 @@
     <!-- Lets the user import a contact (incl. Google-synced ones) into a Contact QR. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- Same-Wi-Fi file hand-off: open a local socket and read the device's LAN IP so a
+         receiver can fetch the file from a QR'd URL using their stock camera. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
     <application
         android:name=".QaRdApp"
         android:allowBackup="true"
@@ -37,6 +43,12 @@
         <activity
             android:name=".ui.DetailActivity"
             android:exported="false"
+            android:theme="@style/Theme.QaRd" />
+
+        <activity
+            android:name=".ui.SendFileActivity"
+            android:exported="false"
+            android:label="Send a file"
             android:theme="@style/Theme.QaRd" />
 
         <activity

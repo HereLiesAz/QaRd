@@ -165,6 +165,9 @@ dependencies {
     // Menu
     implementation(libs.aznavrail)
 
+    // Local HTTP server for same-Wi-Fi file hand-off (sender side).
+    implementation(libs.nanohttpd)
+
     // Google AdMob — play flavor only, so the foss build pulls in no ad SDK.
     "playImplementation"(libs.play.services.ads)
 
