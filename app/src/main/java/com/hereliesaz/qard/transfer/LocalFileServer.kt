@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
+import java.net.URLEncoder
 import java.util.UUID
 
 /**
@@ -48,7 +49,13 @@ class LocalFileServer(
         } else {
             newChunkedResponse(Response.Status.OK, mimeType, input)
         }
-        response.addHeader("Content-Disposition", "attachment; filename=\"${sanitize(fileName)}\"")
+        // RFC 5987 filename* carries non-ASCII names (accents, CJK, emoji) intact; the
+        // plain filename is the ASCII-safe fallback for older clients.
+        val encoded = URLEncoder.encode(fileName, "UTF-8").replace("+", "%20")
+        response.addHeader(
+            "Content-Disposition",
+            "attachment; filename=\"${sanitize(fileName)}\"; filename*=UTF-8''$encoded"
+        )
         return response
     }
 

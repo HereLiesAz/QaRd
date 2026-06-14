@@ -49,6 +49,7 @@
             android:name=".ui.SendFileActivity"
             android:exported="false"
             android:label="Send a file"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.QaRd" />
 
         <activity

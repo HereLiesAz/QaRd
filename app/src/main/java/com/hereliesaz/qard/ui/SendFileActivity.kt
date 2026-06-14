@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.text.format.Formatter
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,7 +40,6 @@ import com.hereliesaz.qard.transfer.LocalFileServer
 import com.hereliesaz.qard.transfer.NetworkUtils
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
-import java.util.Locale
 
 /**
  * Sender-only "pass it on" screen for files. Phase 1: same-Wi-Fi hand-off — pick a file,
@@ -171,7 +171,7 @@ fun SendFileScreen() {
                 )
                 if (s.fileSize >= 0) {
                     Text(
-                        formatSize(s.fileSize),
+                        Formatter.formatFileSize(context, s.fileSize),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -215,18 +215,6 @@ private fun queryFile(context: Context, uri: Uri): FileMeta {
         }
     }
     return FileMeta(name, size)
-}
-
-private fun formatSize(bytes: Long): String {
-    if (bytes < 1024) return "$bytes B"
-    val units = listOf("KB", "MB", "GB", "TB")
-    var value = bytes.toDouble() / 1024
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.lastIndex) {
-        value /= 1024
-        unitIndex++
-    }
-    return String.format(Locale.US, "%.1f %s", value, units[unitIndex])
 }
 
 // NanoHTTPD socket read timeout (ms); generous so a slow download isn't dropped.

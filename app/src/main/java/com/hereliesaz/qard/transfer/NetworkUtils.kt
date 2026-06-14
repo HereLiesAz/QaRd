@@ -1,8 +1,5 @@
 package com.hereliesaz.qard.transfer
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.util.Log
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -18,7 +15,8 @@ object NetworkUtils {
      */
     fun localIpAddress(): String? {
         return try {
-            Collections.list(NetworkInterface.getNetworkInterfaces())
+            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return null
+            Collections.list(interfaces)
                 .asSequence()
                 .filter { runCatching { it.isUp && !it.isLoopback }.getOrDefault(false) }
                 .flatMap { Collections.list(it.inetAddresses).asSequence() }
@@ -29,14 +27,5 @@ object NetworkUtils {
             Log.e("NetworkUtils", "Failed to read local IP", e)
             null
         }
-    }
-
-    /** Whether the device is currently on a Wi-Fi network (best-effort). */
-    fun isOnWifi(context: Context): Boolean {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return false
-        val network = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(network) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 }
