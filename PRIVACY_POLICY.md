@@ -1,6 +1,6 @@
 # Privacy Policy for QaRd Widget
 
-**Last Updated: 2025-08-11**
+**Last Updated: 2026-06-13**
 
 Thank you for choosing QaRd Widget. This Privacy Policy is intended to inform you about how we
 handle information when you use our application.
@@ -23,13 +23,20 @@ Specifically, we do not collect:
 The only data the app handles is the text you provide to generate the QR code. This data is:
 -   **Stored Locally:** The configuration for your widget, including the QR code data, is saved only on your device's local storage.
 -   **Used for QR Code Generation:** The app uses this data solely to generate the QR code image that is displayed in the widget.
+- **Image Export:** If you choose to save a QR code to your gallery, the resulting image is stored
+  in your device's `Pictures/QaRd` folder. This process happens entirely on-device.
 -   **Never Transmitted:** This data is never sent off your device.
 
 ## 3. Permissions
 
-QaRd Widget does not request any special permissions that would allow it to access your personal
-information. The app only uses the standard permissions required to function as a home screen
-widget.
+QaRd Widget uses the following permissions:
+
+- **Storage Access (Android 10 and below) / Media Access (Android 11+):** Used only when you
+  explicitly choose to "Save to Gallery" to export a QR code image.
+- **Standard Widget Permissions:** Required to function as a home screen widget.
+
+The app does not request any permissions that would allow it to access your personal information or
+transmit data over the internet.
 
 ## 4. Changes to This Privacy Policy
 

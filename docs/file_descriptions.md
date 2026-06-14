@@ -2,226 +2,57 @@
 
 This file contains a list of all non-ignored files in the project and a brief description of what each file is supposed to do.
 
-## `.github/workflows/android-ci.yml`
-
-This file is a GitHub Actions workflow that runs continuous integration checks on the Android project. It is triggered on every push and pull request to the `main` branch.
-
-## `.github/workflows/android-cl.yml`
-
-This file is a GitHub Actions workflow that runs continuous integration checks on the Android project. It is triggered on every push and pull request to the `main` branch.
-
-## `.github/workflows/generate-apk-aab-debug-release.yml`
-
-This file is a GitHub Actions workflow that generates debug and release APKs and AABs.
-
-## `.github/workflows/generate-wrapper.yaml`
-
-This file is a GitHub Actions workflow that generates a Gradle wrapper.
-
-## `.github/workflows/generate-wrapper.yml`
-
-This file is a GitHub Actions workflow that generates a Gradle wrapper.
-
-## `.github/workflows/gradle.yaml`
-
-This file is a GitHub Actions workflow that runs Gradle checks.
-
-## `.github/workflows/release.yml`
-
-This file is a GitHub Actions workflow that creates a release on GitHub.
-
-## `.github/workflows/setup-java.yml`
-
-This file is a GitHub Actions workflow that sets up Java for the other workflows.
-
-## `.gitignore`
-
-This file specifies which files and directories should be ignored by Git.
-
-## `APP_DESCRIPTION.md`
-
-This file contains the app description for the QaRd Widget, including a short and full description, key features, and how it works.
-
-## `Agents.md`
-
-This file contains instructions for the agent on how to approach the project.
-
-## `CHANGELOG.md`
-
-This file documents all notable changes to the project.
-
-## `LICENSE`
-
-This file contains the MIT License for the project.
-
-## `PRIVACY_POLICY.md`
-
-This file explains that the app does not collect any personal data.
-
-## `README.md`
-
-This file provides a project overview, features, installation instructions, and usage guide.
-
-## `RELEASE_NOTES.md`
-
-This file contains the release notes for version 1.0.0 of the QaRd Widget.
-
-## `app/build.gradle.kts`
-
-This file is the Gradle build script for the application module. It defines the app's dependencies, build types, and other build configurations.
-
-## `app/src/main/AndroidManifest.xml`
-
-This file is the Android Manifest file for the application. It declares the app's components, permissions, and other essential information.
-
-## `app/src/main/java/com/hereliesaz/qard/data/QrConfig.kt`
-
-This file defines the data classes and enums related to the QR code configuration, such as `QrConfig`, `QrData`, `QrShape`, etc.
-
-## `app/src/main/java/com/hereliesaz/qard/data/QrDataStore.kt`
-
-This file provides a class for storing and retrieving QR code configurations using Android's DataStore.
-
-## `app/src/main/java/com/hereliesaz/qard/ui/ConfigActivity.kt`
-
-This file contains the activity for configuring the QR code widget.
-
-## `app/src/main/java/com/hereliesaz/qard/ui/theme/Color.kt`
-
-This file defines the color palette for the app's theme.
-
-## `app/src/main/java/com/hereliesaz/qard/ui/theme/QaRdTheme.kt`
-
-This file sets up the theme for the app, including the color scheme and typography.
-
-## `app/src/main/java/com/hereliesaz/qard/ui/theme/Type.kt`
-
-This file defines the typography for the app's theme.
-
-## `app/src/main/java/com/hereliesaz/qard/widget/QrGenerator.kt`
-
-This file contains the logic for generating a QR code bitmap from a `QrConfig` object.
-
-## `app/src/main/java/com/hereliesaz/qard/widget/QrWidget.kt`
-
-This file implements the GlanceAppWidget for the QR code widget.
-
-## `app/src/main/java/com/hereliesaz/qard/widget/QrWidgetReceiver.kt`
-
-This file is the receiver for the QR code widget.
-
-## `app/src/main/java/com/hereliesaz/qard/widget/shape/DiamondShapeFunction.kt`
-
-This file defines a custom shape function for the QR code generator to draw diamonds.
-
-## `app/src/main/res/drawable/ic_launcher.webp`
-
-This is the launcher icon for the app.
-
-## `app/src/main/res/layout/activity_main.xml`
-
-This is the layout file for the main activity.
-
-## `app/src/main/res/layout/widget_qr.xml`
-
-This is the layout file for the QR code widget.
-
-## `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`
-
-This is the adaptive launcher icon for the app.
-
-## `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`
-
-This is the round adaptive launcher icon for the app.
-
-## `app/src/main/res/mipmap-hdpi/ic_launcher.webp`
-
-This is the launcher icon for high-density screens.
-
-## `app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp`
-
-This is the foreground of the launcher icon for high-density screens.
-
-## `app/src/main/res/mipmap-hdpi/ic_launcher_round.webp`
-
-This is the round launcher icon for high-density screens.
-
-## `app/src/main/res/mipmap-mdpi/ic_launcher.webp`
-
-This is the launcher icon for medium-density screens.
-
-## `app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp`
-
-This is the foreground of the launcher icon for medium-density screens.
-
-## `app/src/main/res/mipmap-mdpi/ic_launcher_round.webp`
-
-This is the round launcher icon for medium-density screens.
-
-## `app/src/main/res/mipmap-xhdpi/ic_launcher.webp`
-
-This is the launcher icon for extra-high-density screens.
-
-## `app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp`
-
-This is the foreground of the launcher icon for extra-high-density screens.
-
-## `app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp`
-
-This is the round launcher icon for extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxhdpi/ic_launcher.webp`
-
-This is the launcher icon for extra-extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp`
-
-This is the foreground of the launcher icon for extra-extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp`
-
-This is the round launcher icon for extra-extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp`
-
-This is the launcher icon for extra-extra-extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp`
-
-This is the foreground of the launcher icon for extra-extra-extra-high-density screens.
-
-## `app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp`
-
-This is the round launcher icon for extra-extra-extra-high-density screens.
-
-## `app/src/main/res/values/colors.xml`
-
-This file defines the colors for the app.
-
-## `app/src/main/res/values/ic_launcher_background.xml`
-
-This file defines the background color for the launcher icon.
-
-## `app/src/main/res/values/strings.xml`
-
-This file defines the strings for the app.
-
-## `app/src/main/res/values/themes.xml`
-
-This file defines the themes for the app.
-
-## `app/src/main/res/values-night/themes.xml`
-
-This file defines the themes for the app in night mode.
-
-## `app/src/main/res/xml/backup_rules.xml`
-
-This file defines the backup rules for the app.
-
-## `app/src/main/res/xml/data_extraction_rules.xml`
-
-This file defines the data extraction rules for the app.
-
-## `app/src/main/res/xml/qr_widget_info.xml`
-
-This file provides metadata for the QR code widget.
+## `.github/workflows/`
+
+- `android-ci.yml`: GitHub Actions workflow that runs CI checks on push/PR to `main`.
+- `build.yml`: Workflow for building the project.
+- `generate-wrapper.yml`: Workflow that ensures the Gradle wrapper is present and up to date.
+- `gradle.yaml`: Runs Gradle-based checks.
+- `setup-java.yml`: Shared step to set up the Java environment.
+
+## Root Files
+
+- `.gitignore`: Specifies files and directories ignored by Git.
+- `APP_DESCRIPTION.md`: Marketing description of the app for stores.
+- `Agents.md`: High-level goal/prompt for the project's AI agents.
+- `CHANGELOG.md`: Log of all notable changes to the project.
+- `LICENSE`: The MIT License text.
+- `PRIVACY_POLICY.md`: Explains data handling (offline-only, no collection).
+- `README.md`: Project overview, features, and usage guide.
+- `RELEASE_NOTES.md`: Human-readable summary of changes for each release.
+- `build.gradle.kts`: Root Gradle build configuration.
+- `settings.gradle`: Project structure and repository definitions.
+- `version.properties`: Current version information (Major.Minor.Patch.Build).
+- `setup.sh`: Script for setting up the development environment.
+
+## `app/` (Android Application Module)
+
+- `build.gradle.kts`: Application-level build script, dependencies, and Android settings.
+- `src/main/AndroidManifest.xml`: Android manifest declaring components (Activities, Receivers) and permissions.
+
+### `app/src/main/java/com/hereliesaz/qard/`
+
+- `data/QrConfig.kt`: Data models for QR configurations, including data, shape, and colors.
+- `data/QrDataStore.kt`: Handles persistent storage of saved QR configurations using Jetpack DataStore.
+- `ui/MainActivity.kt`: The main entry point, showing the grid of saved QaRds and actions to create new ones.
+- `ui/ConfigActivity.kt`: The editor/creation screen for customizing QR code data and appearance.
+- `ui/DetailActivity.kt`: Displays a large view of a QR code with its decoded contents and actionable links.
+- `ui/theme/`: Contains Compose theme definitions (Color, Type, Theme).
+- `widget/QrGenerator.kt`: Core logic to render a QR code Bitmap from a configuration.
+- `widget/QrImageExporter.kt`: Utility to save generated QR codes as PNG files to the device gallery.
+- `widget/QrWidget.kt`: Implementation of the Home Screen widget using Jetpack Glance.
+- `widget/QrWidgetReceiver.kt`: BroadcastReceiver that handles widget updates and lifecycle.
+- `widget/WidgetTapRouter.kt`: Manages the single-tap vs. double-tap logic for widget interactions.
+- `widget/shape/DiamondShapeFunction.kt`: Custom shape function for diamond-style QR modules.
+
+### `commonMain/` (Shared Code)
+
+- `qrcode/QRCodeShapesEnum.kt`: Defines the available QR code shape types.
+- `qrcode/shape/`: Contains various `QRCodeShapeFunction` implementations (Circle, Default, RoundSquares, etc.) used by the generator.
+
+## Resources
+
+- `app/src/main/res/layout/widget_qr.xml`: XML layout used as a fallback or for widget rendering.
+- `app/src/main/res/values/`: Strings, colors, and themes.
+- `app/src/main/res/xml/`: Metadata for the widget (`qr_widget_info.xml`) and backup/extraction rules.
+- `app/src/main/res/mipmap-*/`: App and launcher icons.
