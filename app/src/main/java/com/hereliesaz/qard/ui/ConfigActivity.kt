@@ -466,7 +466,7 @@ fun ConfigScreen(
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f)) {
-                    AzNavHost(startDestination = "data") {
+                    AzNavHost(startDestination = "load") {
                 composable("load") {
                     LoadScreen(dataStore = dataStore, updateConfig = loadSavedConfig)
                 }
