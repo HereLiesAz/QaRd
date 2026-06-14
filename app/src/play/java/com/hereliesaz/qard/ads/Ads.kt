@@ -10,8 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
@@ -28,10 +26,6 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 private const val BANNER_UNIT_ID = "ca-app-pub-7304740804770627/1570507628"
 private const val PRESETS_BANNER_UNIT_ID = "ca-app-pub-7304740804770627/9257425959"
 private const val INTERSTITIAL_UNIT_ID = "ca-app-pub-7304740804770627/6036324683"
-
-/** Height of the standard 320x50 [AdBanner]; used to reserve space so the banner
- *  layer doesn't obscure content drawn behind it. */
-val AdBannerHeight: Dp = 50.dp
 
 fun initAds(app: Application) {
     MobileAds.initialize(app) {}

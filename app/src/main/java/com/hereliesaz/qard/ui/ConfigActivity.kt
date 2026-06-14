@@ -112,7 +112,6 @@ import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
 import com.hereliesaz.qard.data.hasInfo
 import com.hereliesaz.qard.ads.AdBanner
-import com.hereliesaz.qard.ads.AdBannerHeight
 import com.hereliesaz.qard.ads.PresetsAdBanner
 import com.hereliesaz.qard.ads.rememberInterstitialController
 import com.hereliesaz.qard.ui.theme.LogoPink
@@ -485,17 +484,13 @@ fun ConfigScreen(
         azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
         azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
 
-        // The bottom banner is its own layer, ordered via AzNavRail's page system: a
-        // lower page draws in front, so the banner sits on top of the editor and stays
-        // tappable (its empty area passes touches through to the editor behind it). The
-        // editor is on a higher page and reserves matching bottom space so its content
-        // isn't obscured. Renders nothing / zero height in the foss build.
-        onscreen(alignment = Alignment.BottomCenter, page = 0f) {
-            AdBanner()
-        }
-        onscreen(page = 1f) {
-            Box(modifier = Modifier.fillMaxSize().padding(bottom = AdBannerHeight)) {
-                AzNavHost(startDestination = "load") {
+        onscreen {
+            // The banner stays a foreground element pinned to the bottom of the editor so
+            // it remains tappable and AdMob-compliant; the nav host takes the remaining
+            // height above it. Renders nothing in the foss build.
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    AzNavHost(startDestination = "load") {
                 composable("load") {
                     LoadScreen(
                         dataStore = dataStore,
@@ -545,7 +540,9 @@ fun ConfigScreen(
                         onCreateWidget = { if (isStandalone) pinCurrentAsWidget() else finalizeWidget() }
                     )
                 }
-            }
+                    }
+                }
+                AdBanner()
             }
         }
     }

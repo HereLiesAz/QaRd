@@ -5,8 +5,6 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 
 /**
  * Ad-free (FOSS) implementation. Every ad entry point is a no-op so the build the
@@ -17,9 +15,6 @@ import androidx.compose.ui.unit.dp
 fun initAds(app: Application) {
     // No ads in the FOSS build.
 }
-
-/** No banner in the FOSS build, so it reserves no space. */
-val AdBannerHeight: Dp = 0.dp
 
 @Composable
 fun AdBanner(modifier: Modifier = Modifier) {
