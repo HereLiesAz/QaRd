@@ -2,6 +2,7 @@ package com.hereliesaz.qard.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 enum class QrDataType {
@@ -29,6 +30,13 @@ sealed class QrData {
         val note: String = "",
         // Anything else the user wants to add (label + value).
         val customFields: List<LabeledValue> = emptyList(),
+        // Legacy single-value fields from before the restructure. Kept only so
+        // older saved configs migrate into the new fields instead of losing data;
+        // always null in newly written configs (see migrated()).
+        @SerialName("name") val legacyName: String? = null,
+        @SerialName("phone") val legacyPhone: String? = null,
+        @SerialName("email") val legacyEmail: String? = null,
+        @SerialName("website") val legacyWebsite: String? = null,
     ) : QrData()
 
     @Serializable
@@ -48,6 +56,32 @@ fun QrData.Contact.hasInfo(): Boolean =
         phones.any { it.value.isNotBlank() } || emails.any { it.value.isNotBlank() } ||
         addresses.any { it.value.isNotBlank() } || websites.any { it.value.isNotBlank() } ||
         customFields.any { it.value.isNotBlank() }
+
+/** Maps any legacy single-value Contact fields into the structured fields. */
+fun QrData.Contact.migrated(): QrData.Contact {
+    if (legacyName.isNullOrBlank() && legacyPhone.isNullOrBlank() &&
+        legacyEmail.isNullOrBlank() && legacyWebsite.isNullOrBlank()
+    ) {
+        return this
+    }
+    return copy(
+        firstName = if (firstName.isBlank() && lastName.isBlank()) legacyName.orEmpty() else firstName,
+        phones = if (phones.isEmpty() && !legacyPhone.isNullOrBlank())
+            listOf(LabeledValue("Phone", legacyPhone.orEmpty())) else phones,
+        emails = if (emails.isEmpty() && !legacyEmail.isNullOrBlank())
+            listOf(LabeledValue("Email", legacyEmail.orEmpty())) else emails,
+        websites = if (websites.isEmpty() && !legacyWebsite.isNullOrBlank())
+            listOf(LabeledValue("Website", legacyWebsite.orEmpty())) else websites,
+        legacyName = null,
+        legacyPhone = null,
+        legacyEmail = null,
+        legacyWebsite = null,
+    )
+}
+
+/** Migrates every Contact in the config (call after loading from storage). */
+fun QrConfig.migrated(): QrConfig =
+    copy(data = data.map { if (it is QrData.Contact) it.migrated() else it })
 
 @Serializable
 data class SocialLink(

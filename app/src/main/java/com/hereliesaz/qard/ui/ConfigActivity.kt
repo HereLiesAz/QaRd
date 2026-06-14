@@ -1138,7 +1138,11 @@ private fun LabeledValueSection(
                 }
             }
         }
-        OutlinedButton(onClick = { onChange(items + LabeledValue()) }) {
+        // Don't let empty rows pile up.
+        OutlinedButton(
+            onClick = { onChange(items + LabeledValue()) },
+            enabled = items.isEmpty() || items.last().value.isNotBlank()
+        ) {
             Text("Add")
         }
     }
@@ -1208,11 +1212,29 @@ private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
                             }
                         }
                         ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
-                            if (v1.isNotEmpty()) phones += LabeledValue("Phone", v1)
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.Phone.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.Phone
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                phones += LabeledValue(label.ifBlank { "Phone" }, v1)
+                            }
                         ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
-                            if (v1.isNotEmpty()) emails += LabeledValue("Email", v1)
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.Email.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.Email
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                emails += LabeledValue(label.ifBlank { "Email" }, v1)
+                            }
                         ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE ->
-                            if (v1.isNotEmpty()) addresses += LabeledValue("Address", v1)
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.StructuredPostal.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.StructuredPostal
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                addresses += LabeledValue(label.ifBlank { "Address" }, v1)
+                            }
                         ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
                             if (v1.isNotEmpty()) websites += LabeledValue("Website", v1)
                         ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE -> {
