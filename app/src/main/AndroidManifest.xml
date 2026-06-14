@@ -40,6 +40,12 @@
             android:theme="@style/Theme.QaRd" />
 
         <activity
+            android:name=".ui.WidgetMenuActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
             android:name=".ui.ConfigActivity"
             android:allowUntrustedActivityEmbedding="true"
             android:exported="true"
