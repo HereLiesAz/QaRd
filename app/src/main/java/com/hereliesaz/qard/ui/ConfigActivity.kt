@@ -19,8 +19,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +75,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -901,13 +904,16 @@ fun PresetsScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LoadScreen(
     dataStore: QrDataStore,
     currentConfig: QrConfig,
     onLoad: (QrConfig) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
+    var pendingDelete by remember { mutableStateOf<QrConfig?>(null) }
     LaunchedEffect(key1 = Unit) {
         dataStore.getSavedConfigs().collect { savedConfigs = it }
     }
@@ -924,7 +930,7 @@ fun LoadScreen(
             )
         } else {
             Text(
-                "Tap a saved QR Code to load it into the editor.",
+                "Tap a saved QR Code to load it; long-press to delete.",
                 style = MaterialTheme.typography.bodyMedium
             )
             LazyVerticalGrid(
@@ -936,7 +942,6 @@ fun LoadScreen(
                 gridItems(savedConfigs) { savedConfig ->
                     val isSelected = savedConfig == currentConfig
                     Card(
-                        onClick = { onLoad(savedConfig) },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) {
                                 MaterialTheme.colorScheme.primaryContainer
@@ -944,7 +949,11 @@ fun LoadScreen(
                                 MaterialTheme.colorScheme.surfaceVariant
                             }
                         ),
-                        border = if (isSelected) BorderStroke(2.dp, LogoPink) else null
+                        border = if (isSelected) BorderStroke(2.dp, LogoPink) else null,
+                        modifier = Modifier.combinedClickable(
+                            onClick = { onLoad(savedConfig) },
+                            onLongClick = { pendingDelete = savedConfig }
+                        )
                     ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = savedConfig, title = null, imageSize = 96.dp)
@@ -953,6 +962,27 @@ fun LoadScreen(
                 }
             }
         }
+    }
+
+    pendingDelete?.let { target ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete saved code?") },
+            text = { Text("This removes it from your saved codes and can't be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { dataStore.deleteSavedConfig(target) }
+                    pendingDelete = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
