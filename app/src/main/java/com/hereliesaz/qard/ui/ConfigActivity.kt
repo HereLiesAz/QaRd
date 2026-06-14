@@ -1067,11 +1067,19 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
  */
 private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
     val resolver = context.contentResolver
-    val contactId = resolver.query(
-        contactUri,
-        arrayOf(ContactsContract.Contacts._ID),
-        null, null, null
-    )?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: return null
+    val contactId = try {
+        resolver.query(
+            contactUri,
+            arrayOf(ContactsContract.Contacts._ID),
+            null, null, null
+        )?.use { c ->
+            val idx = c.getColumnIndex(ContactsContract.Contacts._ID)
+            if (idx != -1 && c.moveToFirst()) c.getString(idx) else null
+        }
+    } catch (e: Exception) {
+        Log.e("ConfigActivity", "Failed to query contact id", e)
+        null
+    } ?: return null
 
     var name = ""
     var phone = ""
@@ -1079,31 +1087,37 @@ private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
     var organization = ""
     var website = ""
 
-    resolver.query(
-        ContactsContract.Data.CONTENT_URI,
-        arrayOf(ContactsContract.Data.MIMETYPE, ContactsContract.Data.DATA1),
-        "${ContactsContract.Data.CONTACT_ID} = ?",
-        arrayOf(contactId),
-        null
-    )?.use { c ->
-        val mimeIdx = c.getColumnIndexOrThrow(ContactsContract.Data.MIMETYPE)
-        val dataIdx = c.getColumnIndexOrThrow(ContactsContract.Data.DATA1)
-        while (c.moveToNext()) {
-            val value = c.getString(dataIdx)?.trim().orEmpty()
-            if (value.isEmpty()) continue
-            when (c.getString(mimeIdx)) {
-                ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE ->
-                    if (name.isEmpty()) name = value
-                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
-                    if (phone.isEmpty()) phone = value
-                ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
-                    if (email.isEmpty()) email = value
-                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE ->
-                    if (organization.isEmpty()) organization = value
-                ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
-                    if (website.isEmpty()) website = value
+    try {
+        resolver.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(ContactsContract.Data.MIMETYPE, ContactsContract.Data.DATA1),
+            "${ContactsContract.Data.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null
+        )?.use { c ->
+            val mimeIdx = c.getColumnIndex(ContactsContract.Data.MIMETYPE)
+            val dataIdx = c.getColumnIndex(ContactsContract.Data.DATA1)
+            if (mimeIdx != -1 && dataIdx != -1) {
+                while (c.moveToNext()) {
+                    val value = c.getString(dataIdx)?.trim().orEmpty()
+                    if (value.isEmpty()) continue
+                    when (c.getString(mimeIdx)) {
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE ->
+                            if (name.isEmpty()) name = value
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
+                            if (phone.isEmpty()) phone = value
+                        ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
+                            if (email.isEmpty()) email = value
+                        ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE ->
+                            if (organization.isEmpty()) organization = value
+                        ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
+                            if (website.isEmpty()) website = value
+                    }
+                }
             }
         }
+    } catch (e: Exception) {
+        Log.e("ConfigActivity", "Failed to query contact details", e)
     }
 
     if (name.isEmpty() && phone.isEmpty() && email.isEmpty()) return null
