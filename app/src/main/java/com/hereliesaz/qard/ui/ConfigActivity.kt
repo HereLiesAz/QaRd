@@ -59,6 +59,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -239,7 +241,7 @@ private fun dataTypeIcon(type: QrDataType): ImageVector = when (type) {
 private fun defaultDataFor(type: QrDataType): QrData = when (type) {
     QrDataType.Links -> QrData.Links(links = listOf(""))
     QrDataType.Contact -> QrData.Contact()
-    QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("", "")))
+    QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink()))
 }
 
 private fun replaceData(
@@ -1173,36 +1175,89 @@ fun <T> EditableList(
     }
 }
 
+private data class SocialPlatform(val name: String, val template: String)
+
+// The QR encodes the resolved profile URL; the user only enters their username.
+private val socialPlatforms = listOf(
+    SocialPlatform("Instagram", "https://instagram.com/%s"),
+    SocialPlatform("X", "https://x.com/%s"),
+    SocialPlatform("Facebook", "https://facebook.com/%s"),
+    SocialPlatform("TikTok", "https://tiktok.com/@%s"),
+    SocialPlatform("YouTube", "https://youtube.com/@%s"),
+    SocialPlatform("LinkedIn", "https://linkedin.com/in/%s"),
+    SocialPlatform("GitHub", "https://github.com/%s"),
+    SocialPlatform("Snapchat", "https://snapchat.com/add/%s"),
+    SocialPlatform("Reddit", "https://reddit.com/user/%s"),
+    SocialPlatform("Telegram", "https://t.me/%s"),
+)
+
+private fun resolveSocialUrl(platform: String, username: String): String {
+    if (platform.isBlank()) return ""
+    val trimmed = username.trim()
+    // If the user pasted a full URL, use it as-is instead of double-prefixing.
+    if (trimmed.startsWith("http://", ignoreCase = true) ||
+        trimmed.startsWith("https://", ignoreCase = true)
+    ) {
+        return trimmed
+    }
+    val handle = trimmed.removePrefix("@")
+    if (handle.isEmpty()) return ""
+    val template = socialPlatforms.firstOrNull { it.name.equals(platform, ignoreCase = true) }?.template
+    return template?.format(handle) ?: handle
+}
+
 @Composable
 fun SocialMediaForm(socialMedia: QrData.SocialMedia, onSocialMediaChange: (QrData.SocialMedia) -> Unit) {
+    fun updateLink(index: Int, link: SocialLink) {
+        val newLinks = socialMedia.links.toMutableList().apply { set(index, link) }
+        onSocialMediaChange(socialMedia.copy(links = newLinks))
+    }
     EditableList(
         items = socialMedia.links,
-        onAdd = { onSocialMediaChange(socialMedia.copy(links = socialMedia.links + SocialLink("", ""))) },
+        onAdd = { onSocialMediaChange(socialMedia.copy(links = socialMedia.links + SocialLink())) },
         onRemove = { index -> onSocialMediaChange(socialMedia.copy(links = socialMedia.links.filterIndexed { i, _ -> i != index })) },
         itemContent = { index, item ->
-            Row {
-                OutlinedTextField(
-                    value = item.platform,
-                    onValueChange = { newPlatform ->
-                        val newLinks = socialMedia.links.toMutableList().apply {
-                            set(index, item.copy(platform = newPlatform))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var expanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(item.platform.ifBlank { "Select platform" })
+                    }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        socialPlatforms.forEach { platform ->
+                            DropdownMenuItem(
+                                text = { Text(platform.name) },
+                                onClick = {
+                                    expanded = false
+                                    updateLink(
+                                        index,
+                                        item.copy(
+                                            platform = platform.name,
+                                            url = resolveSocialUrl(platform.name, item.username)
+                                        )
+                                    )
+                                }
+                            )
                         }
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
-                    },
-                    label = { Text("Platform") },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
                 OutlinedTextField(
-                    value = item.url,
-                    onValueChange = { newUrl ->
-                        val newLinks = socialMedia.links.toMutableList().apply {
-                            set(index, item.copy(url = newUrl))
-                        }
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
+                    value = item.username,
+                    onValueChange = { newUsername ->
+                        updateLink(
+                            index,
+                            item.copy(
+                                username = newUsername,
+                                url = resolveSocialUrl(item.platform, newUsername)
+                            )
+                        )
                     },
-                    label = { Text("URL") },
-                    modifier = Modifier.weight(2f)
+                    label = { Text("Username") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

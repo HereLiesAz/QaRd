@@ -29,7 +29,11 @@ sealed class QrData {
 }
 
 @Serializable
-data class SocialLink(val platform: String, val url: String)
+data class SocialLink(
+    val platform: String = "",
+    val username: String = "",
+    val url: String = "",
+)
 
 @Serializable
 enum class BackgroundType {

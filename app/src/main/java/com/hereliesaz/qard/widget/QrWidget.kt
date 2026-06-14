@@ -44,37 +44,37 @@ class QrWidget : GlanceAppWidget() {
             val config by dataStore.getConfig(appWidgetId).collectAsState(initial = null)
             Log.d("WidgetFlow", "Config received in widget (for ID $appWidgetId): $config")
 
-            if (config != null) {
-                // Every tap is routed through WidgetTapRouter, which distinguishes
-                // single tap (open detail) from double tap (open construction).
-                val action = actionRunCallback<WidgetTapAction>(
-                    parameters = actionParametersOf(
-                        ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID) to appWidgetId
-                    )
+            // Every tap is routed through WidgetTapRouter, which distinguishes
+            // single tap (open detail) from double tap (open construction).
+            val action = actionRunCallback<WidgetTapAction>(
+                parameters = actionParametersOf(
+                    ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID) to appWidgetId
                 )
+            )
 
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .background(ImageProvider(createTransparentBitmap()))
-                        .padding(8.dp)
-                        .clickable(action),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val dataIsNotBlank = config!!.data.any {
+            // Always emit a root Box so Glance never renders empty ("can't load
+            // widget"); while config is still loading the box stays blank, which
+            // avoids flashing the "Tap to configure" placeholder on every update.
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(ImageProvider(createTransparentBitmap()))
+                    .padding(8.dp)
+                    .clickable(action),
+                contentAlignment = Alignment.Center
+            ) {
+                val currentConfig = config
+                if (currentConfig != null) {
+                    val dataIsNotBlank = currentConfig.data.any {
                         when (it) {
                             is QrData.Links -> it.links.any { link -> link.isNotBlank() }
                             is QrData.Contact -> it.name.isNotBlank()
                             is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
                         }
                     }
-                    Log.d(
-                        "WidgetFlow",
-                        "Widget dataIsNotBlank (for ID $appWidgetId): $dataIsNotBlank"
-                    )
 
                     if (dataIsNotBlank) {
-                        val qrBitmap = QrGenerator.generate(config!!)
+                        val qrBitmap = QrGenerator.generate(currentConfig)
                         if (qrBitmap != null) {
                             Image(
                                 provider = ImageProvider(qrBitmap),
@@ -85,7 +85,7 @@ class QrWidget : GlanceAppWidget() {
                             Text("Error generating QR Code.")
                         }
                     } else {
-                        Text("Tap to configure widget (ID: $appWidgetId).")
+                        Text("Tap to configure")
                     }
                 }
             }
