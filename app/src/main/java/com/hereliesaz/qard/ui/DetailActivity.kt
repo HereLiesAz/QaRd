@@ -61,7 +61,7 @@ class DetailActivity : ComponentActivity() {
 
         fun configIntent(context: Context, config: QrConfig): Intent =
             Intent(context, DetailActivity::class.java).apply {
-                putExtra(EXTRA_CONFIG, Json.encodeToString(config))
+                putExtra(EXTRA_CONFIG, Json.encodeToString(QrConfig.serializer(), config))
             }
 
         fun widgetIntent(context: Context, appWidgetId: Int): Intent =

@@ -146,7 +146,7 @@ class ConfigActivity : ComponentActivity() {
         fun standaloneIntent(context: Context, config: QrConfig? = null): Intent =
             Intent(context, ConfigActivity::class.java).apply {
                 putExtra(EXTRA_MODE, MODE_STANDALONE)
-                if (config != null) putExtra(EXTRA_CONFIG_JSON, Json.encodeToString(config))
+                if (config != null) putExtra(EXTRA_CONFIG_JSON, Json.encodeToString(QrConfig.serializer(), config))
             }
     }
 

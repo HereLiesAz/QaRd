@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "qr_configs_data_store")
@@ -50,7 +51,7 @@ class QrDataStore(private val context: Context) {
     suspend fun saveConfig(appWidgetId: Int, config: QrConfig) {
         val key = qrConfigKey(appWidgetId)
         context.dataStore.edit { preferences ->
-            val jsonString = json.encodeToString(config)
+            val jsonString = json.encodeToString(QrConfig.serializer(), config)
             Log.d("QrDataStore", "Saving config for widget $appWidgetId: $jsonString")
             preferences[key] = jsonString
         }
@@ -80,7 +81,7 @@ class QrDataStore(private val context: Context) {
 
     suspend fun saveConfigs(configs: List<QrConfig>) {
         context.dataStore.edit { preferences ->
-            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(configs)
+            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(ListSerializer(QrConfig.serializer()), configs)
         }
     }
 
@@ -96,7 +97,7 @@ class QrDataStore(private val context: Context) {
             } catch (e: Exception) {
                 return@edit
             }
-            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(updated)
+            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(ListSerializer(QrConfig.serializer()), updated)
         }
     }
 
@@ -107,7 +108,7 @@ class QrDataStore(private val context: Context) {
      */
     suspend fun savePendingPinConfig(config: QrConfig) {
         context.dataStore.edit { preferences ->
-            preferences[PENDING_PIN_CONFIG_KEY] = json.encodeToString(config)
+            preferences[PENDING_PIN_CONFIG_KEY] = json.encodeToString(QrConfig.serializer(), config)
         }
     }
 

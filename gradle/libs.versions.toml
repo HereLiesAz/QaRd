@@ -1,8 +1,8 @@
 [versions]
-androidApplication = "9.1.0-alpha05"
+androidApplication = "9.1.1"
 aznavrail = "9.13"
 composeColorPicker = "0.7.0"
-kotlin = "2.1.0"
+kotlin = "2.2.10"
 coreKtx = "1.15.0"
 kotlinxSerializationJson = "1.7.3"
 lifecycleRuntimeKtx = "2.8.7"
