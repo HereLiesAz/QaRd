@@ -99,12 +99,14 @@ import com.godaddy.android.colorpicker.HsvColor
 import com.hereliesaz.aznavrail.*
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
+import com.hereliesaz.qard.data.LabeledValue
 import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
 import com.hereliesaz.qard.data.QrDataType
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
+import com.hereliesaz.qard.data.hasInfo
 import com.hereliesaz.qard.ads.AdBanner
 import com.hereliesaz.qard.ads.PresetsAdBanner
 import com.hereliesaz.qard.ads.rememberInterstitialController
@@ -227,7 +229,7 @@ private fun QrData.dataType(): QrDataType = when (this) {
 }
 
 private fun dataTypeLabel(type: QrDataType): String = when (type) {
-    QrDataType.Links -> "Links"
+    QrDataType.Links -> "Link"
     QrDataType.Contact -> "Contact"
     QrDataType.SocialMedia -> "Social Media"
 }
@@ -261,10 +263,14 @@ private fun replaceData(
 private fun QrConfig.hasContent(): Boolean = data.any {
     when (it) {
         is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-        is QrData.Contact -> it.name.isNotBlank()
+        is QrData.Contact -> it.hasInfo()
         is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
     }
 }
+
+// Link and Contact are mutually exclusive — a code is either a single link or a
+// contact card, not both. Social Media can accompany either.
+private val mutuallyExclusiveTypes = setOf(QrDataType.Links, QrDataType.Contact)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -654,7 +660,11 @@ private fun DataTypeSection(
                     onCheckedChange = { isOn ->
                         val data = currentConfig.data.toMutableList()
                         if (isOn) {
-                            if (existing == null) data.add(defaultDataFor(type))
+                            // Turning on Link or Contact removes the other (mutually exclusive).
+                            if (type in mutuallyExclusiveTypes) {
+                                data.removeAll { it.dataType() in mutuallyExclusiveTypes }
+                            }
+                            if (data.none { it.dataType() == type }) data.add(defaultDataFor(type))
                         } else {
                             data.removeAll { it.dataType() == type }
                         }
@@ -1030,42 +1040,113 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
             Spacer(modifier = Modifier.width(8.dp))
             Text("Pick from contacts")
         }
-        OutlinedTextField(
-            value = contact.name,
-            onValueChange = { onContactChange(contact.copy(name = it)) },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = contact.phone,
-            onValueChange = { onContactChange(contact.copy(phone = it)) },
-            label = { Text("Phone") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = contact.email,
-            onValueChange = { onContactChange(contact.copy(email = it)) },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = contact.firstName,
+                onValueChange = { onContactChange(contact.copy(firstName = it)) },
+                label = { Text("First name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedTextField(
+                value = contact.lastName,
+                onValueChange = { onContactChange(contact.copy(lastName = it)) },
+                label = { Text("Last name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+        }
         OutlinedTextField(
             value = contact.organization,
             onValueChange = { onContactChange(contact.copy(organization = it)) },
             label = { Text("Organization") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
-            value = contact.website,
-            onValueChange = { onContactChange(contact.copy(website = it)) },
-            label = { Text("Website") },
+            value = contact.title,
+            onValueChange = { onContactChange(contact.copy(title = it)) },
+            label = { Text("Title") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+        LabeledValueSection("Phones", contact.phones, "Phone") {
+            onContactChange(contact.copy(phones = it))
+        }
+        LabeledValueSection("Emails", contact.emails, "Email") {
+            onContactChange(contact.copy(emails = it))
+        }
+        LabeledValueSection("Addresses", contact.addresses, "Address") {
+            onContactChange(contact.copy(addresses = it))
+        }
+        LabeledValueSection("Websites", contact.websites, "Website") {
+            onContactChange(contact.copy(websites = it))
+        }
+        OutlinedTextField(
+            value = contact.birthday,
+            onValueChange = { onContactChange(contact.copy(birthday = it)) },
+            label = { Text("Birthday") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = contact.note,
+            onValueChange = { onContactChange(contact.copy(note = it)) },
+            label = { Text("Note") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        LabeledValueSection("Custom fields", contact.customFields, "Value") {
+            onContactChange(contact.copy(customFields = it))
+        }
+    }
+}
+
+/** A repeatable list of (label, value) rows with per-row delete and an Add button. */
+@Composable
+private fun LabeledValueSection(
+    title: String,
+    items: List<LabeledValue>,
+    valueLabel: String,
+    onChange: (List<LabeledValue>) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        items.forEachIndexed { index, item ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = item.label,
+                    onValueChange = { newLabel ->
+                        onChange(items.toMutableList().apply { set(index, item.copy(label = newLabel)) })
+                    },
+                    label = { Text("Label") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = item.value,
+                    onValueChange = { newValue ->
+                        onChange(items.toMutableList().apply { set(index, item.copy(value = newValue)) })
+                    },
+                    label = { Text(valueLabel) },
+                    singleLine = true,
+                    modifier = Modifier.weight(2f)
+                )
+                IconButton(onClick = { onChange(items.filterIndexed { i, _ -> i != index }) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Remove")
+                }
+            }
+        }
+        OutlinedButton(onClick = { onChange(items + LabeledValue()) }) {
+            Text("Add")
+        }
     }
 }
 
 /**
- * Reads the picked contact's name/phone/email/organization/website from the
- * contacts provider (requires READ_CONTACTS). Returns null if nothing usable.
+ * Reads the picked contact's details from the contacts provider (requires
+ * READ_CONTACTS) into the structured Contact model. Returns null if empty.
  */
 private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
     val resolver = context.contentResolver
@@ -1083,37 +1164,61 @@ private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
         null
     } ?: return null
 
-    var name = ""
-    var phone = ""
-    var email = ""
+    var firstName = ""
+    var lastName = ""
     var organization = ""
-    var website = ""
+    var title = ""
+    val phones = mutableListOf<LabeledValue>()
+    val emails = mutableListOf<LabeledValue>()
+    val addresses = mutableListOf<LabeledValue>()
+    val websites = mutableListOf<LabeledValue>()
 
     try {
         resolver.query(
             ContactsContract.Data.CONTENT_URI,
-            arrayOf(ContactsContract.Data.MIMETYPE, ContactsContract.Data.DATA1),
+            arrayOf(
+                ContactsContract.Data.MIMETYPE,
+                ContactsContract.Data.DATA1,
+                ContactsContract.Data.DATA2,
+                ContactsContract.Data.DATA3,
+                ContactsContract.Data.DATA4,
+            ),
             "${ContactsContract.Data.CONTACT_ID} = ?",
             arrayOf(contactId),
             null
         )?.use { c ->
             val mimeIdx = c.getColumnIndex(ContactsContract.Data.MIMETYPE)
-            val dataIdx = c.getColumnIndex(ContactsContract.Data.DATA1)
-            if (mimeIdx != -1 && dataIdx != -1) {
+            val d1 = c.getColumnIndex(ContactsContract.Data.DATA1)
+            val d2 = c.getColumnIndex(ContactsContract.Data.DATA2)
+            val d3 = c.getColumnIndex(ContactsContract.Data.DATA3)
+            val d4 = c.getColumnIndex(ContactsContract.Data.DATA4)
+            if (mimeIdx != -1 && d1 != -1) {
+                fun col(i: Int) = if (i != -1) c.getString(i)?.trim().orEmpty() else ""
                 while (c.moveToNext()) {
-                    val value = c.getString(dataIdx)?.trim().orEmpty()
-                    if (value.isEmpty()) continue
+                    val v1 = col(d1)
                     when (c.getString(mimeIdx)) {
-                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE ->
-                            if (name.isEmpty()) name = value
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE -> {
+                            val given = col(d2)
+                            val family = col(d3)
+                            if (given.isNotEmpty() || family.isNotEmpty()) {
+                                if (firstName.isEmpty()) firstName = given
+                                if (lastName.isEmpty()) lastName = family
+                            } else if (firstName.isEmpty() && v1.isNotEmpty()) {
+                                firstName = v1
+                            }
+                        }
                         ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
-                            if (phone.isEmpty()) phone = value
+                            if (v1.isNotEmpty()) phones += LabeledValue("Phone", v1)
                         ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
-                            if (email.isEmpty()) email = value
-                        ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE ->
-                            if (organization.isEmpty()) organization = value
+                            if (v1.isNotEmpty()) emails += LabeledValue("Email", v1)
+                        ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE ->
+                            if (v1.isNotEmpty()) addresses += LabeledValue("Address", v1)
                         ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
-                            if (website.isEmpty()) website = value
+                            if (v1.isNotEmpty()) websites += LabeledValue("Website", v1)
+                        ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE -> {
+                            if (organization.isEmpty()) organization = v1
+                            if (title.isEmpty()) title = col(d4)
+                        }
                     }
                 }
             }
@@ -1122,32 +1227,28 @@ private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
         Log.e("ConfigActivity", "Failed to query contact details", e)
     }
 
-    if (name.isEmpty() && phone.isEmpty() && email.isEmpty()) return null
-    return QrData.Contact(
-        name = name,
-        phone = phone,
-        email = email,
+    val contact = QrData.Contact(
+        firstName = firstName,
+        lastName = lastName,
         organization = organization,
-        website = website,
+        title = title,
+        phones = phones,
+        emails = emails,
+        addresses = addresses,
+        websites = websites,
     )
+    return if (contact.hasInfo()) contact else null
 }
 
 @Composable
 fun LinksForm(links: QrData.Links, onLinksChange: (QrData.Links) -> Unit) {
-    EditableList(
-        items = links.links,
-        onAdd = { onLinksChange(links.copy(links = links.links + "")) },
-        onRemove = { index -> onLinksChange(links.copy(links = links.links.filterIndexed { i, _ -> i != index })) },
-        itemContent = { index, item ->
-            OutlinedTextField(
-                value = item,
-                onValueChange = { newItem ->
-                    onLinksChange(links.copy(links = links.links.toMutableList().apply { set(index, newItem) }))
-                },
-                label = { Text("Link to File") },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+    // A single link only.
+    OutlinedTextField(
+        value = links.links.firstOrNull().orEmpty(),
+        onValueChange = { newUrl -> onLinksChange(links.copy(links = listOf(newUrl))) },
+        label = { Text("Link") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 

@@ -44,6 +44,7 @@ import com.hereliesaz.qard.ads.AdBanner
 import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
+import com.hereliesaz.qard.data.displayName
 import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
 import kotlinx.coroutines.flow.first
@@ -173,12 +174,26 @@ fun QrCodeDetailScreen(config: QrConfig, onBack: () -> Unit) {
                         InfoRow(label = "Link", value = link) { openUrl(context, link) }
                     }
                     is QrData.Contact -> {
-                        if (data.name.isNotBlank()) InfoRow("Name", data.name)
-                        if (data.phone.isNotBlank()) InfoRow("Phone", data.phone)
-                        if (data.email.isNotBlank()) InfoRow("Email", data.email)
+                        val name = data.displayName()
+                        if (name.isNotBlank()) InfoRow("Name", name)
                         if (data.organization.isNotBlank()) InfoRow("Organization", data.organization)
-                        if (data.website.isNotBlank()) {
-                            InfoRow("Website", data.website) { openUrl(context, data.website) }
+                        if (data.title.isNotBlank()) InfoRow("Title", data.title)
+                        data.phones.filter { it.value.isNotBlank() }.forEach {
+                            InfoRow(it.label.ifBlank { "Phone" }, it.value)
+                        }
+                        data.emails.filter { it.value.isNotBlank() }.forEach {
+                            InfoRow(it.label.ifBlank { "Email" }, it.value)
+                        }
+                        data.addresses.filter { it.value.isNotBlank() }.forEach {
+                            InfoRow(it.label.ifBlank { "Address" }, it.value)
+                        }
+                        data.websites.filter { it.value.isNotBlank() }.forEach {
+                            InfoRow(it.label.ifBlank { "Website" }, it.value) { openUrl(context, it.value) }
+                        }
+                        if (data.birthday.isNotBlank()) InfoRow("Birthday", data.birthday)
+                        if (data.note.isNotBlank()) InfoRow("Note", data.note)
+                        data.customFields.filter { it.value.isNotBlank() }.forEach {
+                            InfoRow(it.label.ifBlank { "Field" }, it.value)
                         }
                     }
                     is QrData.SocialMedia -> data.links.filter { it.url.isNotBlank() }.forEach { social ->
