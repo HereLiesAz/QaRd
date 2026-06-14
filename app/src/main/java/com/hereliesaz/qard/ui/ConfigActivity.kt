@@ -894,12 +894,12 @@ fun LoadScreen(
     ) {
         if (savedConfigs.isEmpty()) {
             Text(
-                "Codes you save will appear here.",
+                "QR Codes you save will appear here.",
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
             Text(
-                "Tap a saved code to load it into the editor.",
+                "Tap a saved QR Code to load it into the editor.",
                 style = MaterialTheme.typography.bodyMedium
             )
             LazyVerticalGrid(
