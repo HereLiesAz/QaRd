@@ -26,6 +26,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
+import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
 
@@ -41,52 +42,48 @@ class QrWidget : GlanceAppWidget() {
         Log.d("WidgetFlow", "provideGlance for widget ID: $appWidgetId (from GlanceId $id)")
 
         provideContent {
-            val config by dataStore.getConfig(appWidgetId).collectAsState(initial = null)
+            // Seed with a non-null default so the first frame always emits content —
+            // a Glance widget that renders nothing shows "can't load widget".
+            val config by dataStore.getConfig(appWidgetId).collectAsState(initial = QrConfig())
             Log.d("WidgetFlow", "Config received in widget (for ID $appWidgetId): $config")
 
-            if (config != null) {
-                // Every tap is routed through WidgetTapRouter, which distinguishes
-                // single tap (open detail) from double tap (open construction).
-                val action = actionRunCallback<WidgetTapAction>(
-                    parameters = actionParametersOf(
-                        ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID) to appWidgetId
-                    )
+            // Every tap is routed through WidgetTapRouter, which distinguishes
+            // single tap (open detail) from double tap (open construction).
+            val action = actionRunCallback<WidgetTapAction>(
+                parameters = actionParametersOf(
+                    ActionParameters.Key<Int>(AppWidgetManager.EXTRA_APPWIDGET_ID) to appWidgetId
                 )
+            )
 
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .background(ImageProvider(createTransparentBitmap()))
-                        .padding(8.dp)
-                        .clickable(action),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val dataIsNotBlank = config!!.data.any {
-                        when (it) {
-                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                            is QrData.Contact -> it.name.isNotBlank()
-                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
-                        }
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(ImageProvider(createTransparentBitmap()))
+                    .padding(8.dp)
+                    .clickable(action),
+                contentAlignment = Alignment.Center
+            ) {
+                val dataIsNotBlank = config.data.any {
+                    when (it) {
+                        is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                        is QrData.Contact -> it.name.isNotBlank()
+                        is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
                     }
-                    Log.d(
-                        "WidgetFlow",
-                        "Widget dataIsNotBlank (for ID $appWidgetId): $dataIsNotBlank"
-                    )
+                }
 
-                    if (dataIsNotBlank) {
-                        val qrBitmap = QrGenerator.generate(config!!)
-                        if (qrBitmap != null) {
-                            Image(
-                                provider = ImageProvider(qrBitmap),
-                                contentDescription = "User-defined QR Code",
-                                modifier = GlanceModifier.fillMaxSize()
-                            )
-                        } else {
-                            Text("Error generating QR Code.")
-                        }
+                if (dataIsNotBlank) {
+                    val qrBitmap = QrGenerator.generate(config)
+                    if (qrBitmap != null) {
+                        Image(
+                            provider = ImageProvider(qrBitmap),
+                            contentDescription = "User-defined QR Code",
+                            modifier = GlanceModifier.fillMaxSize()
+                        )
                     } else {
-                        Text("Tap to configure widget (ID: $appWidgetId).")
+                        Text("Error generating QR Code.")
                     }
+                } else {
+                    Text("Tap to configure")
                 }
             }
         }
