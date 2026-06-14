@@ -1192,7 +1192,15 @@ private val socialPlatforms = listOf(
 )
 
 private fun resolveSocialUrl(platform: String, username: String): String {
-    val handle = username.trim().removePrefix("@")
+    if (platform.isBlank()) return ""
+    val trimmed = username.trim()
+    // If the user pasted a full URL, use it as-is instead of double-prefixing.
+    if (trimmed.startsWith("http://", ignoreCase = true) ||
+        trimmed.startsWith("https://", ignoreCase = true)
+    ) {
+        return trimmed
+    }
+    val handle = trimmed.removePrefix("@")
     if (handle.isEmpty()) return ""
     val template = socialPlatforms.firstOrNull { it.name.equals(platform, ignoreCase = true) }?.template
     return template?.format(handle) ?: handle

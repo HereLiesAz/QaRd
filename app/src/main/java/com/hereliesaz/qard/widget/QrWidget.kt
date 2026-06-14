@@ -26,7 +26,6 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.Text
-import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
 
@@ -42,9 +41,7 @@ class QrWidget : GlanceAppWidget() {
         Log.d("WidgetFlow", "provideGlance for widget ID: $appWidgetId (from GlanceId $id)")
 
         provideContent {
-            // Seed with a non-null default so the first frame always emits content —
-            // a Glance widget that renders nothing shows "can't load widget".
-            val config by dataStore.getConfig(appWidgetId).collectAsState(initial = QrConfig())
+            val config by dataStore.getConfig(appWidgetId).collectAsState(initial = null)
             Log.d("WidgetFlow", "Config received in widget (for ID $appWidgetId): $config")
 
             // Every tap is routed through WidgetTapRouter, which distinguishes
@@ -55,6 +52,9 @@ class QrWidget : GlanceAppWidget() {
                 )
             )
 
+            // Always emit a root Box so Glance never renders empty ("can't load
+            // widget"); while config is still loading the box stays blank, which
+            // avoids flashing the "Tap to configure" placeholder on every update.
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
@@ -63,27 +63,30 @@ class QrWidget : GlanceAppWidget() {
                     .clickable(action),
                 contentAlignment = Alignment.Center
             ) {
-                val dataIsNotBlank = config.data.any {
-                    when (it) {
-                        is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                        is QrData.Contact -> it.name.isNotBlank()
-                        is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                val currentConfig = config
+                if (currentConfig != null) {
+                    val dataIsNotBlank = currentConfig.data.any {
+                        when (it) {
+                            is QrData.Links -> it.links.any { link -> link.isNotBlank() }
+                            is QrData.Contact -> it.name.isNotBlank()
+                            is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
+                        }
                     }
-                }
 
-                if (dataIsNotBlank) {
-                    val qrBitmap = QrGenerator.generate(config)
-                    if (qrBitmap != null) {
-                        Image(
-                            provider = ImageProvider(qrBitmap),
-                            contentDescription = "User-defined QR Code",
-                            modifier = GlanceModifier.fillMaxSize()
-                        )
+                    if (dataIsNotBlank) {
+                        val qrBitmap = QrGenerator.generate(currentConfig)
+                        if (qrBitmap != null) {
+                            Image(
+                                provider = ImageProvider(qrBitmap),
+                                contentDescription = "User-defined QR Code",
+                                modifier = GlanceModifier.fillMaxSize()
+                            )
+                        } else {
+                            Text("Error generating QR Code.")
+                        }
                     } else {
-                        Text("Error generating QR Code.")
+                        Text("Tap to configure")
                     }
-                } else {
-                    Text("Tap to configure")
                 }
             }
         }
