@@ -84,6 +84,22 @@ class QrDataStore(private val context: Context) {
         }
     }
 
+    /** Removes a config from the saved-configs list (atomic read-modify-write). */
+    suspend fun deleteSavedConfig(config: QrConfig) {
+        context.dataStore.edit { preferences ->
+            val jsonString = preferences[SAVED_CONFIGS_KEY] ?: return@edit
+            val updated = try {
+                // Migrate so a legacy-shaped stored entry still matches the migrated UI config.
+                json.decodeFromString<List<QrConfig>>(jsonString)
+                    .map { it.migrated() }
+                    .filterNot { it == config }
+            } catch (e: Exception) {
+                return@edit
+            }
+            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(updated)
+        }
+    }
+
     /**
      * Stash the config the user wants to pin as a widget. The widget's appWidgetId
      * isn't known until the launcher actually places it, so the pin-success receiver
