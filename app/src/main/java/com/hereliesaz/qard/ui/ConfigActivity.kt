@@ -484,8 +484,12 @@ fun ConfigScreen(
                         currentConfig = currentConfig,
                         onLoad = { cfg ->
                             loadSavedConfig(cfg)
-                            // Jump to Data so the repopulated fields are visible.
-                            navController.navigate("data")
+                            // Jump to Data so the repopulated fields are visible,
+                            // keeping the back stack clean.
+                            navController.navigate("data") {
+                                popUpTo("load")
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }
