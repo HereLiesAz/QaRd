@@ -13,6 +13,10 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "qr_configs_data_store")
 
+// Tolerate configs written by older app versions whose data model has since
+// changed (e.g. the Contact fields) instead of throwing on unknown keys.
+private val json = Json { ignoreUnknownKeys = true }
+
 class QrDataStore(private val context: Context) {
 
     companion object {
@@ -29,7 +33,7 @@ class QrDataStore(private val context: Context) {
                 Log.d("QrDataStore", "Loading config for widget $appWidgetId: $jsonString")
                 if (jsonString != null) {
                     try {
-                        Json.decodeFromString<QrConfig>(jsonString)
+                        json.decodeFromString<QrConfig>(jsonString).migrated()
                     } catch (e: Exception) {
                         Log.e(
                             "QrDataStore",
@@ -46,7 +50,7 @@ class QrDataStore(private val context: Context) {
     suspend fun saveConfig(appWidgetId: Int, config: QrConfig) {
         val key = qrConfigKey(appWidgetId)
         context.dataStore.edit { preferences ->
-            val jsonString = Json.encodeToString(config)
+            val jsonString = json.encodeToString(config)
             Log.d("QrDataStore", "Saving config for widget $appWidgetId: $jsonString")
             preferences[key] = jsonString
         }
@@ -64,7 +68,7 @@ class QrDataStore(private val context: Context) {
             val jsonString = preferences[SAVED_CONFIGS_KEY]
             if (jsonString != null) {
                 try {
-                    Json.decodeFromString<List<QrConfig>>(jsonString)
+                    json.decodeFromString<List<QrConfig>>(jsonString).map { it.migrated() }
                 } catch (e: Exception) {
                     emptyList()
                 }
@@ -76,7 +80,7 @@ class QrDataStore(private val context: Context) {
 
     suspend fun saveConfigs(configs: List<QrConfig>) {
         context.dataStore.edit { preferences ->
-            preferences[SAVED_CONFIGS_KEY] = Json.encodeToString(configs)
+            preferences[SAVED_CONFIGS_KEY] = json.encodeToString(configs)
         }
     }
 
@@ -87,7 +91,7 @@ class QrDataStore(private val context: Context) {
      */
     suspend fun savePendingPinConfig(config: QrConfig) {
         context.dataStore.edit { preferences ->
-            preferences[PENDING_PIN_CONFIG_KEY] = Json.encodeToString(config)
+            preferences[PENDING_PIN_CONFIG_KEY] = json.encodeToString(config)
         }
     }
 
@@ -98,7 +102,7 @@ class QrDataStore(private val context: Context) {
             val jsonString = preferences[PENDING_PIN_CONFIG_KEY]
             if (jsonString != null) {
                 result = try {
-                    Json.decodeFromString<QrConfig>(jsonString)
+                    json.decodeFromString<QrConfig>(jsonString).migrated()
                 } catch (e: Exception) {
                     null
                 }

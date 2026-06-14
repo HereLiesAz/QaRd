@@ -1,72 +1,49 @@
 package com.hereliesaz.qard.ui.theme
 
-import android.app.Activity
-import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 
+// Single dark theme with white text everywhere. Every `on*` role is white so all
+// Compose Text (which inherits its color from the active color scheme) renders white.
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    tertiary = Pink80,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    onBackground = Color.White,
+    onSurface = Color.White,
+    onSurfaceVariant = Color.White,
+    onPrimaryContainer = Color.White,
+    onSecondaryContainer = Color.White,
+    onTertiaryContainer = Color.White,
+    onError = Color.White,
+    onErrorContainer = Color.White,
 )
 
 @Composable
 fun QaRdTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = DarkColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            (view.context as? androidx.activity.ComponentActivity)?.enableEdgeToEdge(
-                statusBarStyle = androidx.activity.SystemBarStyle.auto(
-                    android.graphics.Color.TRANSPARENT,
-                    android.graphics.Color.TRANSPARENT,
-                ) { darkTheme },
-                navigationBarStyle = androidx.activity.SystemBarStyle.auto(
-                    lightScrim = colorScheme.primary.toArgb(),
-                    darkScrim = colorScheme.primary.toArgb(),
-                ) { darkTheme },
+            (view.context as? ComponentActivity)?.enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+                navigationBarStyle = SystemBarStyle.dark(colorScheme.primary.toArgb()),
             )
         }
     }
@@ -74,6 +51,14 @@ fun QaRdTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
-    )
+    ) {
+        // Wrap in a Surface so the default content color becomes onBackground (white);
+        // MaterialTheme alone doesn't set content color, so unwrapped Text would be black.
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = colorScheme.background,
+        ) {
+            content()
+        }
+    }
 }

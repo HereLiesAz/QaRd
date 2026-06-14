@@ -7,6 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.ContactsContract
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -57,6 +59,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,12 +99,14 @@ import com.godaddy.android.colorpicker.HsvColor
 import com.hereliesaz.aznavrail.*
 import com.hereliesaz.qard.data.BackgroundType
 import com.hereliesaz.qard.data.ForegroundType
+import com.hereliesaz.qard.data.LabeledValue
 import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
 import com.hereliesaz.qard.data.QrDataType
 import com.hereliesaz.qard.data.QrShape
 import com.hereliesaz.qard.data.SocialLink
+import com.hereliesaz.qard.data.hasInfo
 import com.hereliesaz.qard.ads.AdBanner
 import com.hereliesaz.qard.ads.PresetsAdBanner
 import com.hereliesaz.qard.ads.rememberInterstitialController
@@ -223,7 +229,7 @@ private fun QrData.dataType(): QrDataType = when (this) {
 }
 
 private fun dataTypeLabel(type: QrDataType): String = when (type) {
-    QrDataType.Links -> "Links"
+    QrDataType.Links -> "Link"
     QrDataType.Contact -> "Contact"
     QrDataType.SocialMedia -> "Social Media"
 }
@@ -237,7 +243,7 @@ private fun dataTypeIcon(type: QrDataType): ImageVector = when (type) {
 private fun defaultDataFor(type: QrDataType): QrData = when (type) {
     QrDataType.Links -> QrData.Links(links = listOf(""))
     QrDataType.Contact -> QrData.Contact()
-    QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink("", "")))
+    QrDataType.SocialMedia -> QrData.SocialMedia(links = listOf(SocialLink()))
 }
 
 private fun replaceData(
@@ -257,10 +263,14 @@ private fun replaceData(
 private fun QrConfig.hasContent(): Boolean = data.any {
     when (it) {
         is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-        is QrData.Contact -> it.name.isNotBlank()
+        is QrData.Contact -> it.hasInfo()
         is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
     }
 }
+
+// Link and Contact are mutually exclusive — a code is either a single link or a
+// contact card, not both. Social Media can accompany either.
+private val mutuallyExclusiveTypes = setOf(QrDataType.Links, QrDataType.Contact)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -455,20 +465,33 @@ fun ConfigScreen(
 
     AzHostActivityLayout(navController = navController) {
         // Selected rail item highlight — logo pink so it stands out on the dark rail.
+        // Inactive rail items are white; the active item is highlighted with LogoPink.
         azTheme(activeColor = LogoPink)
-        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen)
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit)
-        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome)
-        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette)
-        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility)
-        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save)
+        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, color = Color.White, textColor = Color.White)
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, color = Color.White, textColor = Color.White)
+        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, color = Color.White, textColor = Color.White)
+        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, color = Color.White, textColor = Color.White)
+        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, color = Color.White, textColor = Color.White)
+        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, color = Color.White, textColor = Color.White)
 
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f)) {
-                    AzNavHost(startDestination = "data") {
+                    AzNavHost(startDestination = "load") {
                 composable("load") {
-                    LoadScreen(dataStore = dataStore, updateConfig = loadSavedConfig)
+                    LoadScreen(
+                        dataStore = dataStore,
+                        currentConfig = currentConfig,
+                        onLoad = { cfg ->
+                            loadSavedConfig(cfg)
+                            // Jump to Data so the repopulated fields are visible,
+                            // keeping the back stack clean.
+                            navController.navigate("data") {
+                                popUpTo("load")
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
                 composable("data") {
                     DataScreen(currentConfig = currentConfig, updateConfig = updateConfig)
@@ -604,7 +627,6 @@ fun DataScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Data", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Flip on the kinds of data you want to encode and fill them in.",
             style = MaterialTheme.typography.bodyMedium
@@ -650,7 +672,11 @@ private fun DataTypeSection(
                     onCheckedChange = { isOn ->
                         val data = currentConfig.data.toMutableList()
                         if (isOn) {
-                            if (existing == null) data.add(defaultDataFor(type))
+                            // Turning on Link or Contact removes the other (mutually exclusive).
+                            if (type in mutuallyExclusiveTypes) {
+                                data.removeAll { it.dataType() in mutuallyExclusiveTypes }
+                            }
+                            if (data.none { it.dataType() == type }) data.add(defaultDataFor(type))
                         } else {
                             data.removeAll { it.dataType() == type }
                         }
@@ -692,8 +718,6 @@ fun DesignScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Design", style = MaterialTheme.typography.headlineMedium)
-
         // Shape
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -849,7 +873,6 @@ fun PresetsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Presets", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Tap a preset to apply its colours and shape to your data.",
             style = MaterialTheme.typography.bodyMedium
@@ -881,7 +904,8 @@ fun PresetsScreen(
 @Composable
 fun LoadScreen(
     dataStore: QrDataStore,
-    updateConfig: (QrConfig) -> Unit
+    currentConfig: QrConfig,
+    onLoad: (QrConfig) -> Unit
 ) {
     var savedConfigs by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
     LaunchedEffect(key1 = Unit) {
@@ -893,15 +917,14 @@ fun LoadScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Load", style = MaterialTheme.typography.headlineMedium)
         if (savedConfigs.isEmpty()) {
             Text(
-                "Codes you save will appear here.",
+                "QR Codes you save will appear here.",
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
             Text(
-                "Tap a saved code to load it into the editor.",
+                "Tap a saved QR Code to load it into the editor.",
                 style = MaterialTheme.typography.bodyMedium
             )
             LazyVerticalGrid(
@@ -911,7 +934,18 @@ fun LoadScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 gridItems(savedConfigs) { savedConfig ->
-                    Card(onClick = { updateConfig(savedConfig) }) {
+                    val isSelected = savedConfig == currentConfig
+                    Card(
+                        onClick = { onLoad(savedConfig) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        ),
+                        border = if (isSelected) BorderStroke(2.dp, LogoPink) else null
+                    ) {
                         Box(modifier = Modifier.padding(8.dp)) {
                             QrCodePreview(config = savedConfig, title = null, imageSize = 96.dp)
                         }
@@ -932,7 +966,7 @@ fun PreviewScreen(config: QrConfig) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        QrCodePreview(config = config, title = "Preview", imageSize = 280.dp)
+        QrCodePreview(config = config, title = null, imageSize = 280.dp)
     }
 }
 
@@ -952,7 +986,6 @@ fun SaveScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Save", style = MaterialTheme.typography.headlineMedium)
         QrCodePreview(config = config, title = null, imageSize = 220.dp)
         Text(
             "Your code is saved automatically and shows up under Load. " +
@@ -979,56 +1012,289 @@ fun SaveScreen(
 
 @Composable
 fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // System contact picker — lists the user's Google-synced contacts (and any others).
+    val pickContact = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickContact()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val picked = withContext(Dispatchers.IO) { readContact(context, uri) }
+                if (picked != null) {
+                    onContactChange(picked)
+                } else {
+                    Toast.makeText(context, "Couldn't read that contact", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val contactsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            pickContact.launch(null)
+        } else {
+            Toast.makeText(
+                context,
+                "Contacts permission is needed to import a contact",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = contact.name,
-            onValueChange = { onContactChange(contact.copy(name = it)) },
-            label = { Text("Name") },
+        OutlinedButton(
+            onClick = {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_CONTACTS
+                ) == PackageManager.PERMISSION_GRANTED
+                if (hasPermission) {
+                    pickContact.launch(null)
+                } else {
+                    contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                }
+            },
             modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = contact.phone,
-            onValueChange = { onContactChange(contact.copy(phone = it)) },
-            label = { Text("Phone") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = contact.email,
-            onValueChange = { onContactChange(contact.copy(email = it)) },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        ) {
+            Icon(Icons.Default.Person, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Pick from contacts")
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = contact.firstName,
+                onValueChange = { onContactChange(contact.copy(firstName = it)) },
+                label = { Text("First name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedTextField(
+                value = contact.lastName,
+                onValueChange = { onContactChange(contact.copy(lastName = it)) },
+                label = { Text("Last name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+        }
         OutlinedTextField(
             value = contact.organization,
             onValueChange = { onContactChange(contact.copy(organization = it)) },
             label = { Text("Organization") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
-            value = contact.website,
-            onValueChange = { onContactChange(contact.copy(website = it)) },
-            label = { Text("Website") },
+            value = contact.title,
+            onValueChange = { onContactChange(contact.copy(title = it)) },
+            label = { Text("Title") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+        LabeledValueSection("Phones", contact.phones, "Phone") {
+            onContactChange(contact.copy(phones = it))
+        }
+        LabeledValueSection("Emails", contact.emails, "Email") {
+            onContactChange(contact.copy(emails = it))
+        }
+        LabeledValueSection("Addresses", contact.addresses, "Address") {
+            onContactChange(contact.copy(addresses = it))
+        }
+        LabeledValueSection("Websites", contact.websites, "Website") {
+            onContactChange(contact.copy(websites = it))
+        }
+        OutlinedTextField(
+            value = contact.birthday,
+            onValueChange = { onContactChange(contact.copy(birthday = it)) },
+            label = { Text("Birthday") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = contact.note,
+            onValueChange = { onContactChange(contact.copy(note = it)) },
+            label = { Text("Note") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        LabeledValueSection("Custom fields", contact.customFields, "Value") {
+            onContactChange(contact.copy(customFields = it))
+        }
     }
+}
+
+/** A repeatable list of (label, value) rows with per-row delete and an Add button. */
+@Composable
+private fun LabeledValueSection(
+    title: String,
+    items: List<LabeledValue>,
+    valueLabel: String,
+    onChange: (List<LabeledValue>) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        items.forEachIndexed { index, item ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = item.label,
+                    onValueChange = { newLabel ->
+                        onChange(items.toMutableList().apply { set(index, item.copy(label = newLabel)) })
+                    },
+                    label = { Text("Label") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = item.value,
+                    onValueChange = { newValue ->
+                        onChange(items.toMutableList().apply { set(index, item.copy(value = newValue)) })
+                    },
+                    label = { Text(valueLabel) },
+                    singleLine = true,
+                    modifier = Modifier.weight(2f)
+                )
+                IconButton(onClick = { onChange(items.filterIndexed { i, _ -> i != index }) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Remove")
+                }
+            }
+        }
+        // Don't let empty rows pile up.
+        OutlinedButton(
+            onClick = { onChange(items + LabeledValue()) },
+            enabled = items.isEmpty() || items.last().value.isNotBlank()
+        ) {
+            Text("Add")
+        }
+    }
+}
+
+/**
+ * Reads the picked contact's details from the contacts provider (requires
+ * READ_CONTACTS) into the structured Contact model. Returns null if empty.
+ */
+private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
+    val resolver = context.contentResolver
+    val contactId = try {
+        resolver.query(
+            contactUri,
+            arrayOf(ContactsContract.Contacts._ID),
+            null, null, null
+        )?.use { c ->
+            val idx = c.getColumnIndex(ContactsContract.Contacts._ID)
+            if (idx != -1 && c.moveToFirst()) c.getString(idx) else null
+        }
+    } catch (e: Exception) {
+        Log.e("ConfigActivity", "Failed to query contact id", e)
+        null
+    } ?: return null
+
+    var firstName = ""
+    var lastName = ""
+    var organization = ""
+    var title = ""
+    val phones = mutableListOf<LabeledValue>()
+    val emails = mutableListOf<LabeledValue>()
+    val addresses = mutableListOf<LabeledValue>()
+    val websites = mutableListOf<LabeledValue>()
+
+    try {
+        resolver.query(
+            ContactsContract.Data.CONTENT_URI,
+            arrayOf(
+                ContactsContract.Data.MIMETYPE,
+                ContactsContract.Data.DATA1,
+                ContactsContract.Data.DATA2,
+                ContactsContract.Data.DATA3,
+                ContactsContract.Data.DATA4,
+            ),
+            "${ContactsContract.Data.CONTACT_ID} = ?",
+            arrayOf(contactId),
+            null
+        )?.use { c ->
+            val mimeIdx = c.getColumnIndex(ContactsContract.Data.MIMETYPE)
+            val d1 = c.getColumnIndex(ContactsContract.Data.DATA1)
+            val d2 = c.getColumnIndex(ContactsContract.Data.DATA2)
+            val d3 = c.getColumnIndex(ContactsContract.Data.DATA3)
+            val d4 = c.getColumnIndex(ContactsContract.Data.DATA4)
+            if (mimeIdx != -1 && d1 != -1) {
+                fun col(i: Int) = if (i != -1) c.getString(i)?.trim().orEmpty() else ""
+                while (c.moveToNext()) {
+                    val v1 = col(d1)
+                    when (c.getString(mimeIdx)) {
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE -> {
+                            val given = col(d2)
+                            val family = col(d3)
+                            if (given.isNotEmpty() || family.isNotEmpty()) {
+                                if (firstName.isEmpty()) firstName = given
+                                if (lastName.isEmpty()) lastName = family
+                            } else if (firstName.isEmpty() && v1.isNotEmpty()) {
+                                firstName = v1
+                            }
+                        }
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.Phone.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.Phone
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                phones += LabeledValue(label.ifBlank { "Phone" }, v1)
+                            }
+                        ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.Email.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.Email
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                emails += LabeledValue(label.ifBlank { "Email" }, v1)
+                            }
+                        ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE ->
+                            if (v1.isNotEmpty()) {
+                                val type = col(d2).toIntOrNull()
+                                    ?: ContactsContract.CommonDataKinds.StructuredPostal.TYPE_OTHER
+                                val label = ContactsContract.CommonDataKinds.StructuredPostal
+                                    .getTypeLabel(context.resources, type, col(d3)).toString()
+                                addresses += LabeledValue(label.ifBlank { "Address" }, v1)
+                            }
+                        ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
+                            if (v1.isNotEmpty()) websites += LabeledValue("Website", v1)
+                        ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE -> {
+                            if (organization.isEmpty()) organization = v1
+                            if (title.isEmpty()) title = col(d4)
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e: Exception) {
+        Log.e("ConfigActivity", "Failed to query contact details", e)
+    }
+
+    val contact = QrData.Contact(
+        firstName = firstName,
+        lastName = lastName,
+        organization = organization,
+        title = title,
+        phones = phones,
+        emails = emails,
+        addresses = addresses,
+        websites = websites,
+    )
+    return if (contact.hasInfo()) contact else null
 }
 
 @Composable
 fun LinksForm(links: QrData.Links, onLinksChange: (QrData.Links) -> Unit) {
-    EditableList(
-        items = links.links,
-        onAdd = { onLinksChange(links.copy(links = links.links + "")) },
-        onRemove = { index -> onLinksChange(links.copy(links = links.links.filterIndexed { i, _ -> i != index })) },
-        itemContent = { index, item ->
-            OutlinedTextField(
-                value = item,
-                onValueChange = { newItem ->
-                    onLinksChange(links.copy(links = links.links.toMutableList().apply { set(index, newItem) }))
-                },
-                label = { Text("Link to File") },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+    // A single link only.
+    OutlinedTextField(
+        value = links.links.firstOrNull().orEmpty(),
+        onValueChange = { newUrl -> onLinksChange(links.copy(links = listOf(newUrl))) },
+        label = { Text("Link") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
@@ -1056,36 +1322,89 @@ fun <T> EditableList(
     }
 }
 
+private data class SocialPlatform(val name: String, val template: String)
+
+// The QR encodes the resolved profile URL; the user only enters their username.
+private val socialPlatforms = listOf(
+    SocialPlatform("Instagram", "https://instagram.com/%s"),
+    SocialPlatform("X", "https://x.com/%s"),
+    SocialPlatform("Facebook", "https://facebook.com/%s"),
+    SocialPlatform("TikTok", "https://tiktok.com/@%s"),
+    SocialPlatform("YouTube", "https://youtube.com/@%s"),
+    SocialPlatform("LinkedIn", "https://linkedin.com/in/%s"),
+    SocialPlatform("GitHub", "https://github.com/%s"),
+    SocialPlatform("Snapchat", "https://snapchat.com/add/%s"),
+    SocialPlatform("Reddit", "https://reddit.com/user/%s"),
+    SocialPlatform("Telegram", "https://t.me/%s"),
+)
+
+private fun resolveSocialUrl(platform: String, username: String): String {
+    if (platform.isBlank()) return ""
+    val trimmed = username.trim()
+    // If the user pasted a full URL, use it as-is instead of double-prefixing.
+    if (trimmed.startsWith("http://", ignoreCase = true) ||
+        trimmed.startsWith("https://", ignoreCase = true)
+    ) {
+        return trimmed
+    }
+    val handle = trimmed.removePrefix("@")
+    if (handle.isEmpty()) return ""
+    val template = socialPlatforms.firstOrNull { it.name.equals(platform, ignoreCase = true) }?.template
+    return template?.format(handle) ?: handle
+}
+
 @Composable
 fun SocialMediaForm(socialMedia: QrData.SocialMedia, onSocialMediaChange: (QrData.SocialMedia) -> Unit) {
+    fun updateLink(index: Int, link: SocialLink) {
+        val newLinks = socialMedia.links.toMutableList().apply { set(index, link) }
+        onSocialMediaChange(socialMedia.copy(links = newLinks))
+    }
     EditableList(
         items = socialMedia.links,
-        onAdd = { onSocialMediaChange(socialMedia.copy(links = socialMedia.links + SocialLink("", ""))) },
+        onAdd = { onSocialMediaChange(socialMedia.copy(links = socialMedia.links + SocialLink())) },
         onRemove = { index -> onSocialMediaChange(socialMedia.copy(links = socialMedia.links.filterIndexed { i, _ -> i != index })) },
         itemContent = { index, item ->
-            Row {
-                OutlinedTextField(
-                    value = item.platform,
-                    onValueChange = { newPlatform ->
-                        val newLinks = socialMedia.links.toMutableList().apply {
-                            set(index, item.copy(platform = newPlatform))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var expanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(item.platform.ifBlank { "Select platform" })
+                    }
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        socialPlatforms.forEach { platform ->
+                            DropdownMenuItem(
+                                text = { Text(platform.name) },
+                                onClick = {
+                                    expanded = false
+                                    updateLink(
+                                        index,
+                                        item.copy(
+                                            platform = platform.name,
+                                            url = resolveSocialUrl(platform.name, item.username)
+                                        )
+                                    )
+                                }
+                            )
                         }
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
-                    },
-                    label = { Text("Platform") },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
                 OutlinedTextField(
-                    value = item.url,
-                    onValueChange = { newUrl ->
-                        val newLinks = socialMedia.links.toMutableList().apply {
-                            set(index, item.copy(url = newUrl))
-                        }
-                        onSocialMediaChange(socialMedia.copy(links = newLinks))
+                    value = item.username,
+                    onValueChange = { newUsername ->
+                        updateLink(
+                            index,
+                            item.copy(
+                                username = newUsername,
+                                url = resolveSocialUrl(item.platform, newUsername)
+                            )
+                        )
                     },
-                    label = { Text("URL") },
-                    modifier = Modifier.weight(2f)
+                    label = { Text("Username") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }

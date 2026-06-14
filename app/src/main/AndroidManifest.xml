@@ -6,6 +6,9 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
+    <!-- Lets the user import a contact (incl. Google-synced ones) into a Contact QR. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:name=".QaRdApp"
         android:allowBackup="true"
@@ -35,6 +38,12 @@
             android:name=".ui.DetailActivity"
             android:exported="false"
             android:theme="@style/Theme.QaRd" />
+
+        <activity
+            android:name=".ui.WidgetMenuActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity
             android:name=".ui.ConfigActivity"
