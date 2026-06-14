@@ -7,6 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.ContactsContract
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -974,7 +976,58 @@ fun SaveScreen(
 
 @Composable
 fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // System contact picker — lists the user's Google-synced contacts (and any others).
+    val pickContact = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickContact()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val picked = withContext(Dispatchers.IO) { readContact(context, uri) }
+                if (picked != null) {
+                    onContactChange(picked)
+                } else {
+                    Toast.makeText(context, "Couldn't read that contact", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val contactsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            pickContact.launch(null)
+        } else {
+            Toast.makeText(
+                context,
+                "Contacts permission is needed to import a contact",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_CONTACTS
+                ) == PackageManager.PERMISSION_GRANTED
+                if (hasPermission) {
+                    pickContact.launch(null)
+                } else {
+                    contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Person, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Pick from contacts")
+        }
         OutlinedTextField(
             value = contact.name,
             onValueChange = { onContactChange(contact.copy(name = it)) },
@@ -1006,6 +1059,61 @@ fun ContactForm(contact: QrData.Contact, onContactChange: (QrData.Contact) -> Un
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+/**
+ * Reads the picked contact's name/phone/email/organization/website from the
+ * contacts provider (requires READ_CONTACTS). Returns null if nothing usable.
+ */
+private fun readContact(context: Context, contactUri: Uri): QrData.Contact? {
+    val resolver = context.contentResolver
+    val contactId = resolver.query(
+        contactUri,
+        arrayOf(ContactsContract.Contacts._ID),
+        null, null, null
+    )?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: return null
+
+    var name = ""
+    var phone = ""
+    var email = ""
+    var organization = ""
+    var website = ""
+
+    resolver.query(
+        ContactsContract.Data.CONTENT_URI,
+        arrayOf(ContactsContract.Data.MIMETYPE, ContactsContract.Data.DATA1),
+        "${ContactsContract.Data.CONTACT_ID} = ?",
+        arrayOf(contactId),
+        null
+    )?.use { c ->
+        val mimeIdx = c.getColumnIndexOrThrow(ContactsContract.Data.MIMETYPE)
+        val dataIdx = c.getColumnIndexOrThrow(ContactsContract.Data.DATA1)
+        while (c.moveToNext()) {
+            val value = c.getString(dataIdx)?.trim().orEmpty()
+            if (value.isEmpty()) continue
+            when (c.getString(mimeIdx)) {
+                ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE ->
+                    if (name.isEmpty()) name = value
+                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE ->
+                    if (phone.isEmpty()) phone = value
+                ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE ->
+                    if (email.isEmpty()) email = value
+                ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE ->
+                    if (organization.isEmpty()) organization = value
+                ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE ->
+                    if (website.isEmpty()) website = value
+            }
+        }
+    }
+
+    if (name.isEmpty() && phone.isEmpty() && email.isEmpty()) return null
+    return QrData.Contact(
+        name = name,
+        phone = phone,
+        email = email,
+        organization = organization,
+        website = website,
+    )
 }
 
 @Composable
