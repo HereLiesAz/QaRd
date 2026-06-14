@@ -75,7 +75,7 @@ class QrWidget : GlanceAppWidget() {
                     }
 
                     if (dataIsNotBlank) {
-                        val qrBitmap = QrGenerator.generate(currentConfig)
+                        val qrBitmap = QrGenerator.generate(currentConfig)?.scaledForWidget()
                         if (qrBitmap != null) {
                             Image(
                                 provider = ImageProvider(qrBitmap),
@@ -97,5 +97,20 @@ class QrWidget : GlanceAppWidget() {
         val bitmap = createBitmap(1, 1)
         bitmap.eraseColor(0) // Makes the bitmap transparent
         return bitmap
+    }
+
+    // A widget's RemoteViews can't carry a multi-MB bitmap across the binder —
+    // the launcher then shows "can't show content". The generated QR can be
+    // 700px+ (several MB as ARGB), so cap it to a safe, still-scannable size.
+    private fun Bitmap.scaledForWidget(maxPx: Int = 384): Bitmap {
+        val largest = maxOf(width, height)
+        if (largest <= maxPx) return this
+        val scale = maxPx.toFloat() / largest
+        return Bitmap.createScaledBitmap(
+            this,
+            (width * scale).toInt().coerceAtLeast(1),
+            (height * scale).toInt().coerceAtLeast(1),
+            true
+        )
     }
 }

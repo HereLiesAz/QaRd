@@ -122,6 +122,11 @@ object QrGenerator {
         return if (t.isEmpty()) "" else ";TYPE=${escapeVCard(t)}"
     }
 
+    // URLs are written as-is (not escaped), so strip CR/LF to prevent a crafted
+    // value from injecting extra vCard properties or terminating the card.
+    private fun sanitizeUrl(value: String): String =
+        value.trim().replace("\r", "").replace("\n", "")
+
     private fun createVCard(
         contact: QrData.Contact,
         socialLinks: List<com.hereliesaz.qard.data.SocialLink>,
@@ -149,14 +154,14 @@ object QrGenerator {
             lines += "ADR${vcardType(it.label)}:;;${escapeVCard(it.value)};;;;"
         }
         contact.websites.filter { it.value.isNotBlank() }.forEach {
-            lines += "URL:${it.value.trim()}"
+            lines += "URL:${sanitizeUrl(it.value)}"
         }
-        links.filter { it.isNotBlank() }.forEach { lines += "URL:${it.trim()}" }
+        links.filter { it.isNotBlank() }.forEach { lines += "URL:${sanitizeUrl(it)}" }
 
         if (contact.birthday.isNotBlank()) lines += "BDAY:${escapeVCard(contact.birthday)}"
 
         socialLinks.filter { it.url.isNotBlank() }.forEach {
-            lines += "X-SOCIALPROFILE;TYPE=${escapeVCard(it.platform)}:${it.url}"
+            lines += "X-SOCIALPROFILE;TYPE=${escapeVCard(it.platform)}:${sanitizeUrl(it.url)}"
         }
 
         val noteParts = (listOf(contact.note) + contact.customFields

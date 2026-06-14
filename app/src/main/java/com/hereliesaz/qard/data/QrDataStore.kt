@@ -33,7 +33,7 @@ class QrDataStore(private val context: Context) {
                 Log.d("QrDataStore", "Loading config for widget $appWidgetId: $jsonString")
                 if (jsonString != null) {
                     try {
-                        json.decodeFromString<QrConfig>(jsonString)
+                        json.decodeFromString<QrConfig>(jsonString).migrated()
                     } catch (e: Exception) {
                         Log.e(
                             "QrDataStore",
@@ -68,7 +68,7 @@ class QrDataStore(private val context: Context) {
             val jsonString = preferences[SAVED_CONFIGS_KEY]
             if (jsonString != null) {
                 try {
-                    json.decodeFromString<List<QrConfig>>(jsonString)
+                    json.decodeFromString<List<QrConfig>>(jsonString).map { it.migrated() }
                 } catch (e: Exception) {
                     emptyList()
                 }
@@ -102,7 +102,7 @@ class QrDataStore(private val context: Context) {
             val jsonString = preferences[PENDING_PIN_CONFIG_KEY]
             if (jsonString != null) {
                 result = try {
-                    json.decodeFromString<QrConfig>(jsonString)
+                    json.decodeFromString<QrConfig>(jsonString).migrated()
                 } catch (e: Exception) {
                     null
                 }
