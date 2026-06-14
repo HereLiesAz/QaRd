@@ -28,6 +28,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.Text
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.data.QrDataStore
+import com.hereliesaz.qard.data.hasInfo
 
 class QrWidget : GlanceAppWidget() {
 
@@ -68,7 +69,7 @@ class QrWidget : GlanceAppWidget() {
                     val dataIsNotBlank = currentConfig.data.any {
                         when (it) {
                             is QrData.Links -> it.links.any { link -> link.isNotBlank() }
-                            is QrData.Contact -> it.name.isNotBlank()
+                            is QrData.Contact -> it.hasInfo()
                             is QrData.SocialMedia -> it.links.any { social -> social.url.isNotBlank() }
                         }
                     }

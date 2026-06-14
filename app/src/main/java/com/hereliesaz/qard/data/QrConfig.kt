@@ -17,16 +17,37 @@ sealed class QrData {
 
     @Serializable
     data class Contact(
-        val name: String = "",
-        val phone: String = "",
-        val email: String = "",
+        val firstName: String = "",
+        val lastName: String = "",
         val organization: String = "",
-        val website: String = "",
+        val title: String = "",
+        val phones: List<LabeledValue> = emptyList(),
+        val emails: List<LabeledValue> = emptyList(),
+        val addresses: List<LabeledValue> = emptyList(),
+        val websites: List<LabeledValue> = emptyList(),
+        val birthday: String = "",
+        val note: String = "",
+        // Anything else the user wants to add (label + value).
+        val customFields: List<LabeledValue> = emptyList(),
     ) : QrData()
 
     @Serializable
     data class SocialMedia(val links: List<SocialLink> = emptyList()) : QrData()
 }
+
+/** A value with a user-facing label, e.g. ("Mobile", "+1 555…") or ("Work", "…"). */
+@Serializable
+data class LabeledValue(val label: String = "", val value: String = "")
+
+fun QrData.Contact.displayName(): String =
+    listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ").trim()
+
+fun QrData.Contact.hasInfo(): Boolean =
+    firstName.isNotBlank() || lastName.isNotBlank() || organization.isNotBlank() ||
+        title.isNotBlank() || birthday.isNotBlank() || note.isNotBlank() ||
+        phones.any { it.value.isNotBlank() } || emails.any { it.value.isNotBlank() } ||
+        addresses.any { it.value.isNotBlank() } || websites.any { it.value.isNotBlank() } ||
+        customFields.any { it.value.isNotBlank() }
 
 @Serializable
 data class SocialLink(

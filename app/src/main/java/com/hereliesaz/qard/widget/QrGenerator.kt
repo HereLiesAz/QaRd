@@ -117,24 +117,55 @@ object QrGenerator {
     private fun escapeVCard(value: String): String =
         value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
-    private fun createVCard(contact: QrData.Contact, socialLinks: List<com.hereliesaz.qard.data.SocialLink>, links: List<String>): String {
-        val socialLinksStr = socialLinks.filter { it.url.isNotBlank() }.joinToString("\n") {
-            "X-SOCIALPROFILE;type=${escapeVCard(it.platform)}:${it.url}"
+    private fun vcardType(label: String): String {
+        val t = label.trim()
+        return if (t.isEmpty()) "" else ";TYPE=${escapeVCard(t)}"
+    }
+
+    private fun createVCard(
+        contact: QrData.Contact,
+        socialLinks: List<com.hereliesaz.qard.data.SocialLink>,
+        links: List<String>
+    ): String {
+        val lines = mutableListOf("BEGIN:VCARD", "VERSION:3.0")
+
+        val first = contact.firstName.trim()
+        val last = contact.lastName.trim()
+        if (first.isNotBlank() || last.isNotBlank()) {
+            lines += "N:${escapeVCard(last)};${escapeVCard(first)};;;"
+            lines += "FN:${escapeVCard(listOf(first, last).filter { it.isNotBlank() }.joinToString(" "))}"
         }
-        val linksStr = links.filter { it.isNotBlank() }.joinToString("\n") {
-            "URL:$it"
+        if (contact.organization.isNotBlank()) lines += "ORG:${escapeVCard(contact.organization)}"
+        if (contact.title.isNotBlank()) lines += "TITLE:${escapeVCard(contact.title)}"
+
+        contact.phones.filter { it.value.isNotBlank() }.forEach {
+            lines += "TEL${vcardType(it.label)}:${escapeVCard(it.value)}"
         }
-        return """
-            BEGIN:VCARD
-            VERSION:3.0
-            N:${escapeVCard(contact.name)}
-            ORG:${escapeVCard(contact.organization)}
-            TEL:${escapeVCard(contact.phone)}
-            URL:${contact.website}
-            EMAIL:${contact.email}
-            $socialLinksStr
-            $linksStr
-            END:VCARD
-        """.trimIndent()
+        contact.emails.filter { it.value.isNotBlank() }.forEach {
+            lines += "EMAIL${vcardType(it.label)}:${escapeVCard(it.value)}"
+        }
+        contact.addresses.filter { it.value.isNotBlank() }.forEach {
+            // Freeform address goes in the street component of ADR.
+            lines += "ADR${vcardType(it.label)}:;;${escapeVCard(it.value)};;;;"
+        }
+        contact.websites.filter { it.value.isNotBlank() }.forEach {
+            lines += "URL:${it.value.trim()}"
+        }
+        links.filter { it.isNotBlank() }.forEach { lines += "URL:${it.trim()}" }
+
+        if (contact.birthday.isNotBlank()) lines += "BDAY:${escapeVCard(contact.birthday)}"
+
+        socialLinks.filter { it.url.isNotBlank() }.forEach {
+            lines += "X-SOCIALPROFILE;TYPE=${escapeVCard(it.platform)}:${it.url}"
+        }
+
+        val noteParts = (listOf(contact.note) + contact.customFields
+            .filter { it.value.isNotBlank() }
+            .map { "${it.label.ifBlank { "Note" }}: ${it.value}" })
+            .filter { it.isNotBlank() }
+        if (noteParts.isNotEmpty()) lines += "NOTE:${escapeVCard(noteParts.joinToString(" | "))}"
+
+        lines += "END:VCARD"
+        return lines.joinToString("\n")
     }
 }
