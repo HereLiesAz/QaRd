@@ -469,19 +469,33 @@ fun ConfigScreen(
 
     AzHostActivityLayout(navController = navController) {
         // Selected rail item highlight — logo pink so it stands out on the dark rail.
-        // Inactive rail items are white; the active item is highlighted with LogoPink.
+        // Inactive rail items show their white text label; the active one is LogoPink.
+        // NOTE: giving a rail item a `color` makes AzNavRail render its icon in place
+        // of its text, so we set only `textColor` here to keep the labels as text.
         azTheme(activeColor = LogoPink)
-        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, color = Color.White, textColor = Color.White)
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, color = Color.White, textColor = Color.White)
-        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, color = Color.White, textColor = Color.White)
-        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, color = Color.White, textColor = Color.White)
-        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, color = Color.White, textColor = Color.White)
-        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, color = Color.White, textColor = Color.White)
+        // Enable AzNavRail's help overlay: tapping the Help rail item draws info cards
+        // linked to each rail item, sourced from the `info` text below.
+        azAdvanced(helpEnabled = true)
+        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, textColor = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, textColor = Color.White, info = "Pick what the code carries — a link, a contact card, or social profiles — and fill in the details.")
+        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
+        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
+        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
+        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
+        azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
 
+        background {
+            // The bottom banner is a background layer behind the editor rather than an
+            // on-screen element (play flavor only; renders nothing in the foss build).
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                AdBanner()
+            }
+        }
         onscreen {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) {
-                    AzNavHost(startDestination = "load") {
+            AzNavHost(startDestination = "load") {
                 composable("load") {
                     LoadScreen(
                         dataStore = dataStore,
@@ -531,10 +545,6 @@ fun ConfigScreen(
                         onCreateWidget = { if (isStandalone) pinCurrentAsWidget() else finalizeWidget() }
                     )
                 }
-            }
-                }
-                // Banner pinned to the bottom of every editor screen (play flavor only).
-                AdBanner()
             }
         }
     }
