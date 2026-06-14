@@ -455,13 +455,14 @@ fun ConfigScreen(
 
     AzHostActivityLayout(navController = navController) {
         // Selected rail item highlight — logo pink so it stands out on the dark rail.
+        // Inactive rail items are white; the active item is highlighted with LogoPink.
         azTheme(activeColor = LogoPink)
-        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen)
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit)
-        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome)
-        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette)
-        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility)
-        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save)
+        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, color = Color.White, textColor = Color.White)
+        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, color = Color.White, textColor = Color.White)
+        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, color = Color.White, textColor = Color.White)
+        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, color = Color.White, textColor = Color.White)
+        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, color = Color.White, textColor = Color.White)
+        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, color = Color.White, textColor = Color.White)
 
         onscreen {
             Column(modifier = Modifier.fillMaxSize()) {
