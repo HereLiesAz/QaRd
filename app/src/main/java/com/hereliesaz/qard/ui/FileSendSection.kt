@@ -2,25 +2,24 @@ package com.hereliesaz.qard.ui
 
 import android.content.Context
 import android.net.Uri
-import android.os.Bundle
 import android.provider.OpenableColumns
 import android.text.format.Formatter
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -38,24 +37,7 @@ import com.hereliesaz.qard.data.QrConfig
 import com.hereliesaz.qard.data.QrData
 import com.hereliesaz.qard.transfer.LocalFileServer
 import com.hereliesaz.qard.transfer.NetworkUtils
-import com.hereliesaz.qard.ui.theme.QaRdTheme
 import com.hereliesaz.qard.widget.QrGenerator
-
-/**
- * Sender-only "pass it on" screen for files. Phase 1: same-Wi-Fi hand-off — pick a file,
- * serve it from a local HTTP server, and show a QR of the URL. The receiver scans it with
- * their stock camera; no app, no scanner, no account needed on the other end.
- */
-class SendFileActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            QaRdTheme {
-                SendFileScreen()
-            }
-        }
-    }
-}
 
 private sealed interface SendState {
     data object Idle : SendState
@@ -68,8 +50,14 @@ private sealed interface SendState {
     ) : SendState
 }
 
+/**
+ * A Data-screen section for the sender-only "pass a file on" flow. Pick a file, serve it
+ * from a local HTTP server, and show a QR of the URL. A receiver on the same Wi-Fi scans
+ * it with their stock camera and the file downloads in their browser — no app, scanner, or
+ * account on the other end. The server lives only while this section is on screen.
+ */
 @Composable
-fun SendFileScreen() {
+fun FileSendSection() {
     val context = LocalContext.current
     var state by remember { mutableStateOf<SendState>(SendState.Idle) }
     var server by remember { mutableStateOf<LocalFileServer?>(null) }
@@ -102,7 +90,7 @@ fun SendFileScreen() {
         try {
             srv.start(NanoHttpdTimeoutMs, false)
         } catch (e: Exception) {
-            Log.e("SendFileActivity", "Failed to start local server", e)
+            Log.e("FileSendSection", "Failed to start local server", e)
             state = SendState.Error("Couldn't start the local server. Try again.")
             return@rememberLauncherForActivityResult
         }
@@ -110,90 +98,87 @@ fun SendFileScreen() {
         state = SendState.Serving(srv.url(ip), meta.name, meta.size)
     }
 
-    // Tear the server down when the screen leaves composition.
+    // Tear the server down when the section leaves composition.
     DisposableEffect(Unit) {
         onDispose { stopServer() }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        when (val s = state) {
-            is SendState.Idle -> {
-                Text(
-                    "Send a file to a nearby phone on the same Wi-Fi. Pick a file and a QR " +
-                        "appears — the other person scans it with their normal camera and the " +
-                        "file downloads in their browser. No app needed on their end.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                )
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Default.Send, contentDescription = null)
+                Text("Send a file", style = MaterialTheme.typography.titleMedium)
             }
 
-            is SendState.NoNetwork -> {
-                Text(
-                    "You're not on a Wi-Fi network. Connect both phones to the same Wi-Fi, " +
-                        "then try again.",
+            when (val s = state) {
+                is SendState.Idle -> Text(
+                    "Pick a file and a QR appears. Someone on the same Wi-Fi scans it with their " +
+                        "normal camera and the file downloads in their browser — no app needed.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
                 )
-            }
 
-            is SendState.Error -> {
-                Text(
+                is SendState.NoNetwork -> Text(
+                    "You're not on a Wi-Fi network. Connect both phones to the same Wi-Fi, then " +
+                        "try again.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+
+                is SendState.Error -> Text(
                     s.message,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
                 )
+
+                is SendState.Serving -> {
+                    val bitmap = remember(s.url) {
+                        QrGenerator.generate(
+                            QrConfig(data = listOf(QrData.Links(links = listOf(s.url))))
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "QR code for the file download link",
+                                modifier = Modifier.size(220.dp),
+                            )
+                        }
+                        Text(
+                            s.fileName,
+                            style = MaterialTheme.typography.titleSmall,
+                            textAlign = TextAlign.Center,
+                        )
+                        if (s.fileSize >= 0) {
+                            Text(
+                                Formatter.formatFileSize(context, s.fileSize),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Text(
+                            "Have them scan this while you stay on this screen — the link stops " +
+                                "working when you leave.",
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
 
-            is SendState.Serving -> {
-                val bitmap = remember(s.url) {
-                    QrGenerator.generate(
-                        QrConfig(data = listOf(QrData.Links(links = listOf(s.url))))
-                    )
-                }
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "QR code for the file download link",
-                        modifier = Modifier.size(280.dp),
-                    )
-                }
-                Text(
-                    s.fileName,
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                )
-                if (s.fileSize >= 0) {
-                    Text(
-                        Formatter.formatFileSize(context, s.fileSize),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-                Text(
-                    "Have them scan this with their camera while you stay on this screen. " +
-                        "The link stops working when you leave.",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    s.url,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                )
+            OutlinedButton(
+                onClick = { picker.launch(arrayOf("*/*")) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (state is SendState.Serving) "Pick another file" else "Choose a file")
             }
-        }
-
-        Button(
-            onClick = { picker.launch(arrayOf("*/*")) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(if (state is SendState.Serving) "Pick another file" else "Choose a file")
         }
     }
 }

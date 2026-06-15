@@ -114,6 +114,9 @@ data class QrConfig(
     val backgroundGradientColors: List<Int> = listOf(Color.White.toArgb(), Color.Black.toArgb()),
     val backgroundGradientAngle: Float = 0f,
     val backgroundAlpha: Float = 1f,
+    // Epoch millis when this config was first saved. 0 for legacy entries saved
+    // before timestamps existed (shown without a date on the Load screen).
+    val createdAt: Long = 0L,
 )
 
 @Serializable
