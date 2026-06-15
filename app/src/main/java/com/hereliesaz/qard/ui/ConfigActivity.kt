@@ -42,21 +42,14 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -477,19 +470,21 @@ fun ConfigScreen(
         // Enable AzNavRail's help overlay: tapping the Help rail item draws info cards
         // linked to each rail item, sourced from the `info` text below.
         azAdvanced(helpEnabled = true)
-        azRailItem(id = "load", text = "Load", route = "load", content = Icons.Default.FolderOpen, textColor = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
-        azRailItem(id = "data", text = "Data", route = "data", content = Icons.Default.Edit, textColor = Color.White, info = "Pick what the code carries — a link, a contact card, or social profiles — and fill in the details.")
-        azRailItem(id = "presets", text = "Presets", route = "presets", content = Icons.Default.AutoAwesome, textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
-        azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
-        azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
-        azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
+        // No `content` icon on these items: AzNavRail renders a rail item as its icon
+        // when it has content, or as its text label when content is omitted (as the
+        // content-less Help item already does). Text labels are what we want here.
+        azRailItem(id = "load", text = "Load", route = "load", textColor = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
+        azRailItem(id = "data", text = "Data", route = "data", textColor = Color.White, info = "Pick what the code carries — a link, a contact card, or social profiles — and fill in the details.")
+        azRailItem(id = "presets", text = "Presets", route = "presets", textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
+        azRailItem(id = "design", text = "Design", route = "design", textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
+        azRailItem(id = "preview", text = "Preview", route = "preview", textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
+        azRailItem(id = "save", text = "Save", route = "save", textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
         // Launches the standalone "pass a file on" flow (same-Wi-Fi hand-off).
         azRailItem(
             id = "send",
             text = "Send",
-            content = Icons.Default.Send,
-            color = Color.White,
             textColor = Color.White,
+            info = "Hand a file to a nearby phone on the same Wi-Fi; they scan the QR with their camera to download it.",
             onClick = { context.startActivity(Intent(context, SendFileActivity::class.java)) }
         )
         azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
