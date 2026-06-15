@@ -42,14 +42,20 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -488,7 +494,6 @@ fun ConfigScreen(
         azRailItem(id = "preview", text = "Preview", route = "preview", textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
         azRailItem(id = "save", text = "Save", route = "save", textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
         azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
-
 
         onscreen {
             // The banner stays a foreground element pinned to the bottom of the editor so
