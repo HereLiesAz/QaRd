@@ -475,10 +475,6 @@ fun ConfigScreen(
         // content-less Help item already does). Text labels are what we want here.
         azRailItem(id = "load", text = "Load", route = "load", textColor = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
         azRailItem(id = "data", text = "Data", route = "data", textColor = Color.White, info = "Pick what the code carries — a link, a contact card, or social profiles — and fill in the details.")
-        azRailItem(id = "presets", text = "Presets", route = "presets", textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
-        azRailItem(id = "design", text = "Design", route = "design", textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
-        azRailItem(id = "preview", text = "Preview", route = "preview", textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
-        azRailItem(id = "save", text = "Save", route = "save", textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
         // Launches the standalone "pass a file on" flow (same-Wi-Fi hand-off).
         azRailItem(
             id = "send",
@@ -487,6 +483,10 @@ fun ConfigScreen(
             info = "Hand a file to a nearby phone on the same Wi-Fi; they scan the QR with their camera to download it.",
             onClick = { context.startActivity(Intent(context, SendFileActivity::class.java)) }
         )
+        azRailItem(id = "presets", text = "Presets", route = "presets", textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
+        azRailItem(id = "design", text = "Design", route = "design", textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
+        azRailItem(id = "preview", text = "Preview", route = "preview", textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
+        azRailItem(id = "save", text = "Save", route = "save", textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
         azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
 
 
