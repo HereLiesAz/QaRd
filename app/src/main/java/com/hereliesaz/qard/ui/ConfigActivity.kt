@@ -477,16 +477,18 @@ fun ConfigScreen(
         // Enable AzNavRail's help overlay: tapping the Help rail item draws info cards
         // linked to each rail item, sourced from the `info` text below.
         azAdvanced(helpEnabled = true)
-        // No `content` icon on these items: AzNavRail renders a rail item as its icon
-        // when it has content, or as its text label when content is omitted. We want text
-        // labels, coloured white (the active item is recoloured to LogoPink by azTheme).
-        azRailItem(id = "load", text = "Load", route = "load", color = Color.White, textColor = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
-        azRailItem(id = "data", text = "Data", route = "data", color = Color.White, textColor = Color.White, info = "Pick what the code carries — a link, a contact card, social profiles, or a file to send — and fill it in.")
-        azRailItem(id = "presets", text = "Presets", route = "presets", color = Color.White, textColor = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
-        azRailItem(id = "design", text = "Design", route = "design", color = Color.White, textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
-        azRailItem(id = "preview", text = "Preview", route = "preview", color = Color.White, textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
-        azRailItem(id = "save", text = "Save", route = "save", color = Color.White, textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
-        azHelpRailItem(id = "help", text = "Help", color = Color.White, textColor = Color.White)
+        // No `content` icon: AzNavRail renders an item's text label when content is
+        // omitted. `color` is the button's base (border + text) colour, white here; the
+        // active item is recoloured to LogoPink via azTheme(activeColor). We deliberately
+        // do NOT set `textColor` — it overrides the active colour and would keep the
+        // selected item's text white instead of pink.
+        azRailItem(id = "load", text = "Load", route = "load", color = Color.White, info = "Browse and reload your saved QR codes. Tap one to edit it; long-press to delete.")
+        azRailItem(id = "data", text = "Data", route = "data", color = Color.White, info = "Pick what the code carries — a link, a contact card, social profiles, or a file to send — and fill it in.")
+        azRailItem(id = "presets", text = "Presets", route = "presets", color = Color.White, info = "Apply a ready-made colour-and-shape style to your data with a single tap.")
+        azRailItem(id = "design", text = "Design", route = "design", color = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
+        azRailItem(id = "preview", text = "Preview", route = "preview", color = Color.White, info = "See the finished QR code at full size before you save or share it.")
+        azRailItem(id = "save", text = "Save", route = "save", color = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
+        azHelpRailItem(id = "help", text = "Help", color = Color.White)
 
 
         onscreen {
