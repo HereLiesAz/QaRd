@@ -19,6 +19,7 @@ appcompat = "1.7.0"
 constraintlayout = "2.2.0"
 navigationCompose = "2.8.4"
 playServicesAds = "23.6.0"
+nanohttpd = "2.3.1"
 
 [libraries]
 # Core & UI
@@ -57,6 +58,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 qrcode-kotlin-android = { module = "io.github.g0dkar:qrcode-kotlin-android", version.ref = "qrcodeKotlinAndroid" }
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 [plugins]

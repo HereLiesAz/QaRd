@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
@@ -482,7 +483,17 @@ fun ConfigScreen(
         azRailItem(id = "design", text = "Design", route = "design", content = Icons.Default.Palette, textColor = Color.White, info = "Customise the code's shape, foreground and background colours, gradients, and transparency.")
         azRailItem(id = "preview", text = "Preview", route = "preview", content = Icons.Default.Visibility, textColor = Color.White, info = "See the finished QR code at full size before you save or share it.")
         azRailItem(id = "save", text = "Save", route = "save", content = Icons.Default.Save, textColor = Color.White, info = "Save the code as an image or add it to your home screen as a widget. Edits auto-save as you go.")
+        // Launches the standalone "pass a file on" flow (same-Wi-Fi hand-off).
+        azRailItem(
+            id = "send",
+            text = "Send",
+            content = Icons.Default.Send,
+            color = Color.White,
+            textColor = Color.White,
+            onClick = { context.startActivity(Intent(context, SendFileActivity::class.java)) }
+        )
         azHelpRailItem(id = "help", text = "Help", textColor = Color.White)
+
 
         onscreen {
             // The banner stays a foreground element pinned to the bottom of the editor so
