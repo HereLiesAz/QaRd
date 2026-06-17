@@ -1,6 +1,6 @@
 [versions]
 androidApplication = "9.1.1"
-aznavrail = "9.13"
+aznavrail = "10.1"
 composeColorPicker = "0.7.0"
 kotlin = "2.2.10"
 coreKtx = "1.15.0"
