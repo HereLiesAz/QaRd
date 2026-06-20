@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution">
+
+    <!--
+      On-demand delivery: this module is NOT installed with the base app. It is
+      fetched at runtime via SplitInstallManager (see docs/play-delivery.md) and
+      only when delivered by Google Play. `instant="false"` keeps it out of
+      Google Play Instant. Switch `dist:onDemand` to an <dist:install-time>
+      element to have Play install it alongside the base instead.
+    -->
+    <dist:module
+        dist:instant="false"
+        dist:title="@string/feature_transfer_title">
+        <dist:delivery>
+            <dist:on-demand />
+        </dist:delivery>
+        <dist:fusing dist:include="true" />
+    </dist:module>
+
+    <application>
+        <activity
+            android:name=".TransferFeatureActivity"
+            android:exported="false" />
+    </application>
+</manifest>
