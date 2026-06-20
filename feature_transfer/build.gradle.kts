@@ -1,6 +1,8 @@
 plugins {
+    // AGP provides built-in Kotlin support (the base :app module likewise applies no
+    // separate kotlin.android plugin), so applying org.jetbrains.kotlin.android here
+    // would double-register the `kotlin` extension and fail.
     alias(libs.plugins.android.dynamic.feature)
-    alias(libs.plugins.kotlin.android)
 }
 
 // On-demand dynamic feature module scaffold. Today it ships a tiny placeholder

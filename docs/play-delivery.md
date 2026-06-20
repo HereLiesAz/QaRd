@@ -109,6 +109,13 @@ Both the base `Application` (`QaRdApp.attachBaseContext`) and the module's Activ
 module stays installable on its own; on-demand modules only resolve when the app is
 installed **from Play** (a sideloaded/foss APK has no SplitInstall backend).
 
+**FOSS compliance.** The proprietary Play Core library (`feature-delivery`) is pulled in
+via `playImplementation` only, so the **foss** flavor (and any F-Droid build) stays free of
+non-free dependencies. Shared code never touches `SplitCompat` directly — it goes through
+`SplitCompatUtils` (`com.hereliesaz.qard.splitcompat`), which has a real Play
+implementation in `src/play` and a no-op in `src/foss`, mirroring the existing flavor-split
+`initAds` pattern. The foss build needs no splits anyway (single APK, no Play backend).
+
 ### R8 / minification
 
 `isMinifyEnabled = false` for `release` today. Enabling R8 + resource shrinking would

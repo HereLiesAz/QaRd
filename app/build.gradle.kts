@@ -30,7 +30,7 @@ var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
 // lower versionCode. When no override is supplied we keep the original local
 // behaviour: auto-increment on release/bundle builds and persist it to
 // version.properties.
-val versionBuildOverride = (project.findProperty("versionBuild") as String?)?.trim()?.toIntOrNull()
+val versionBuildOverride = project.findProperty("versionBuild")?.toString()?.trim()?.toIntOrNull()
 val isReleaseBuild = gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("bundle", ignoreCase = true)
 }
@@ -178,10 +178,12 @@ dependencies {
     // Menu
     implementation(libs.aznavrail)
 
-    // Play Feature Delivery — SplitInstallManager for installing/loading on-demand
-    // dynamic feature modules at runtime. Pulled into both flavors because it governs
-    // app-bundle module delivery, not ads.
-    implementation(libs.play.feature.delivery)
+    // Play Feature Delivery — SplitInstallManager / SplitCompat for installing and
+    // loading on-demand dynamic feature modules at runtime. Proprietary Google Play
+    // Core code, so it's confined to the `play` flavor to keep the FOSS build (and
+    // F-Droid distribution) free of non-free dependencies. Flavor-specific
+    // SplitCompatUtils (src/{foss,play}) wraps it so shared code never references it.
+    "playImplementation"(libs.play.feature.delivery)
 
     // Local HTTP server for same-Wi-Fi file hand-off (sender side).
     implementation(libs.nanohttpd)
