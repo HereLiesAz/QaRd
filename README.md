@@ -41,6 +41,24 @@ Share your contact info, files, or social media with a QR code widget. A simple 
 3.  Customize the QaRd design.
 4. Huzzah. Your home screen now displays your QaRd. Resize for the perfect fit—it stays crisp!
 
+## Building & Releasing
+
+The ad-free **foss** build ships as a signed APK to GitHub Releases (see
+`.github/workflows/build.yml`). The Play Store build is the **play** flavor, packaged as a
+signed **Android App Bundle** with automatic per-device splits and a dynamic feature module
+scaffold for on-demand delivery.
+
+```bash
+# Signed Play App Bundle (reads signing creds from local.properties):
+./gradlew bundlePlayRelease -PversionBuild=$(git rev-list --count HEAD)
+```
+
+Publishing to Play is a manual `workflow_dispatch` run of **Play Release (AAB)**
+(`.github/workflows/play-release.yml`) — defaults to the *internal* track, *draft* status,
+and publishing **off** (build + upload the `.aab` artifact only). Full details, required
+secrets, the one-time Play service-account setup, and the dynamic-feature delivery model
+are in [`docs/play-delivery.md`](docs/play-delivery.md).
+
 ## Lock Screen Availability
 
 **Important Note on Lock Screen Availability:**

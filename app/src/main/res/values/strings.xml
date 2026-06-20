@@ -8,4 +8,7 @@
     <string name="tap_to_unlock">Tap to unlock</string>
     <string name="qr_code_image_description">QR Code</string>
     <string name="widget_placeholder_text">Configure to show QR code</string>
+    <!-- Title for the on-demand :feature_transfer dynamic feature module. Must live in
+         the base module so Play can show it during install. -->
+    <string name="feature_transfer_title">File transfer</string>
 </resources>
