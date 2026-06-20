@@ -18,6 +18,16 @@ android {
         minSdk = 26
     }
 
+    // Mirror the base module's flavor dimension so this module's variants
+    // (fossDebug/playDebug/…) match :app's exactly. Without it, the
+    // implementation(project(":app")) dependency below is ambiguous — Gradle
+    // can't choose between :app's foss and play runtime variants.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("foss") { dimension = "distribution" }
+        create("play") { dimension = "distribution" }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
