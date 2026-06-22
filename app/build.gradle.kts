@@ -25,11 +25,10 @@ val localProperties = Properties().apply {
 
 var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
 
-// An explicit override always wins, e.g. CI passes a strictly-increasing value via
-// `-PversionBuild=$(git rev-list --count HEAD)` so Play never sees a duplicate or
-// lower versionCode. When no override is supplied we keep the original local
-// behaviour: auto-increment on release/bundle builds and persist it to
-// version.properties.
+// An explicit override wins when provided (e.g. CI pins the exact versionBuild read
+// from version.properties via `-PversionBuild=<value>`). When no override is
+// supplied, release/bundle builds auto-increment versionBuild and persist it back
+// to version.properties so it remains the single source of truth.
 val versionBuildOverride = project.findProperty("versionBuild")?.toString()?.trim()?.toIntOrNull()
 val isReleaseBuild = gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("bundle", ignoreCase = true)
