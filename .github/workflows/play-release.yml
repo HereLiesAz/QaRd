@@ -38,8 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history so the monotonic versionCode (commit count) is correct.
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Generate Keystore from Secrets
         env:
@@ -82,17 +81,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Build the signed Play (AdMob) App Bundle. versionCode = commit count, which
-      # strictly increases on every commit so Play never rejects a duplicate/lower
-      # code. The Android App Bundle automatically produces per-device density, ABI,
-      # and language splits at install time — no separate artifacts to build.
+      # Build the signed Play (AdMob) App Bundle. versionCode is read from
+      # version.properties (versionBuild). The Android App Bundle automatically
+      # produces per-device density, ABI, and language splits at install time.
       - name: Build signed AAB
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          VERSION_CODE=$(git rev-list --count HEAD)
+          VERSION_CODE=$(grep 'versionBuild=' version.properties | cut -d'=' -f2 | tr -d '\r ')
           echo "Building bundlePlayRelease with versionCode=$VERSION_CODE"
           ./gradlew bundlePlayRelease -PversionBuild=$VERSION_CODE --build-cache \
             -Pandroid.injected.signing.store.file=$(pwd)/app/keystore.jks \

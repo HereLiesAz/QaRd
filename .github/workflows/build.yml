@@ -102,10 +102,9 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set +e
-          export BUILD_NUMBER=$(git rev-list --count HEAD)
-          
+
           # Build the ad-free FOSS APK (the artifact published to GitHub Releases).
-          ./gradlew assembleFossDebug -PversionBuild=$BUILD_NUMBER --build-cache \
+          ./gradlew assembleFossDebug --build-cache \
             -Pandroid.injected.signing.store.file=$(pwd)/app/keystore.jks \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
@@ -158,21 +157,11 @@ jobs:
         if: success() && github.event_name == 'push'
         id: release_vars
         run: |
-          export BUILD_NUMBER=$(git rev-list --count HEAD)
-          
-          # Extract version info from properties file
-  
+          # All version components come from version.properties — the single source of truth.
           MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2 | tr -d '\r ')
           MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2 | tr -d '\r ')
-
-          # Calculate Patch version programmatically based on commits since Minor update
-          MINOR_COMMIT=$(git blame -L '/versionMinor=/',+1 version.properties | awk '{print $1}' | tr -d '^')
-          if [ -n "$MINOR_COMMIT" ]; then
-            PATCH=$(git rev-list --count $MINOR_COMMIT..HEAD)
-          else
-    
-            PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2 | tr -d '\r ')
-          fi
+          PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2 | tr -d '\r ')
+          BUILD_NUMBER=$(grep 'versionBuild=' version.properties | cut -d'=' -f2 | tr -d '\r ')
 
           VERSION_NAME="$MAJOR.$MINOR.$PATCH.$BUILD_NUMBER"
           
