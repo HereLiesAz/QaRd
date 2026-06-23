@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.updateAll
@@ -43,6 +44,8 @@ class QrCodeWidgetReceiver : GlanceAppWidgetReceiver() {
                 val saved = store.getSavedConfigs().first()
                 store.saveConfigs((saved + config).distinct())
                 QrWidget().updateAll(context)
+            } catch (e: Exception) {
+                Log.e("QrCodeWidgetReceiver", "Failed to handle pin success for widget $appWidgetId", e)
             } finally {
                 pendingResult.finish()
             }

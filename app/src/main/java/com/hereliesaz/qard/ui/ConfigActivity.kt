@@ -411,13 +411,9 @@ fun ConfigScreen(
         scope.launch {
             persistCurrentConfig()
             dataStore.savePendingPinConfig(cfg)
-            if (useQrCodeWidget) {
-                val provider = ComponentName(context, QrCodeWidgetReceiver::class.java)
-                manager.requestPinAppWidget(provider, null, QrCodeWidgetReceiver.pinSuccessCallback(context))
-            } else {
-                val provider = ComponentName(context, QrWidgetReceiver::class.java)
-                manager.requestPinAppWidget(provider, null, QrWidgetReceiver.pinSuccessCallback(context))
-            }
+            val receiverClass = if (useQrCodeWidget) QrCodeWidgetReceiver::class.java else QrWidgetReceiver::class.java
+            val callback = if (useQrCodeWidget) QrCodeWidgetReceiver.pinSuccessCallback(context) else QrWidgetReceiver.pinSuccessCallback(context)
+            manager.requestPinAppWidget(ComponentName(context, receiverClass), null, callback)
         }
     }
 
