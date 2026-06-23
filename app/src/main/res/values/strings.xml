@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">QaRd</string>
     <string name="appwidget_description">A widget that displays a user-defined QR code.</string>
+    <string name="qr_code_widget_description">A compact QR code widget for your home screen.</string>
     <string name="configure_widget_title">Configure QR Code</string>
     <string name="qr_code_data_label">QR Code Data</string>
     <string name="save_widget_button">Create Widget</string>
