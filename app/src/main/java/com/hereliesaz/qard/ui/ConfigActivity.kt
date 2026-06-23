@@ -111,6 +111,7 @@ import com.hereliesaz.qard.ads.PresetsAdBanner
 import com.hereliesaz.qard.ads.rememberInterstitialController
 import com.hereliesaz.qard.ui.theme.LogoPink
 import com.hereliesaz.qard.ui.theme.QaRdTheme
+import com.hereliesaz.qard.widget.QrCodeWidgetReceiver
 import com.hereliesaz.qard.widget.QrGenerator
 import com.hereliesaz.qard.widget.QrImageExporter
 import com.hereliesaz.qard.widget.QrWidget
@@ -298,6 +299,7 @@ fun ConfigScreen(
     var showGradientColorPicker2 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker1 by remember { mutableStateOf(false) }
     var showFgGradientColorPicker2 by remember { mutableStateOf(false) }
+    var showWidgetTypeDialog by remember { mutableStateOf(false) }
 
     var presets by remember { mutableStateOf<List<QrConfig>>(emptyList()) }
 
@@ -393,11 +395,9 @@ fun ConfigScreen(
         }
     }
 
-    // Pin a brand-new widget to the home screen — the same flow as the launcher's
-    // widget picker "Add" button. The launcher drops the widget in an open spot
-    // with its resize bounding box; the new widget's id arrives in the pin-success
-    // broadcast handled by QrWidgetReceiver.
-    fun pinCurrentAsWidget() {
+    // Pin a brand-new widget to the home screen. useQrCodeWidget selects the compact
+    // 1×1 QR Code widget; false (default) uses the generic 2×2 QaRd widget.
+    fun pinCurrentAsWidget(useQrCodeWidget: Boolean = false) {
         val cfg = config ?: return
         val manager = AppWidgetManager.getInstance(context)
         if (!manager.isRequestPinAppWidgetSupported) {
@@ -411,8 +411,9 @@ fun ConfigScreen(
         scope.launch {
             persistCurrentConfig()
             dataStore.savePendingPinConfig(cfg)
-            val provider = ComponentName(context, QrWidgetReceiver::class.java)
-            manager.requestPinAppWidget(provider, null, QrWidgetReceiver.pinSuccessCallback(context))
+            val receiverClass = if (useQrCodeWidget) QrCodeWidgetReceiver::class.java else QrWidgetReceiver::class.java
+            val callback = if (useQrCodeWidget) QrCodeWidgetReceiver.pinSuccessCallback(context) else QrWidgetReceiver.pinSuccessCallback(context)
+            manager.requestPinAppWidget(ComponentName(context, receiverClass), null, callback)
         }
     }
 
@@ -545,7 +546,7 @@ fun ConfigScreen(
                         hasData = hasData,
                         isStandalone = isStandalone,
                         onSaveImage = onSaveImageClick,
-                        onCreateWidget = { if (isStandalone) pinCurrentAsWidget() else finalizeWidget() }
+                        onCreateWidget = { if (isStandalone) showWidgetTypeDialog = true else finalizeWidget() }
                     )
                 }
                     }
@@ -553,6 +554,42 @@ fun ConfigScreen(
                 AdBanner()
             }
         }
+    }
+
+    if (showWidgetTypeDialog) {
+        AlertDialog(
+            onDismissRequest = { showWidgetTypeDialog = false },
+            title = { Text("Add to Home Screen") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choose a widget type:", style = MaterialTheme.typography.bodyMedium)
+                    Button(
+                        onClick = {
+                            showWidgetTypeDialog = false
+                            pinCurrentAsWidget(false)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("QaRd (2×2)")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showWidgetTypeDialog = false
+                            pinCurrentAsWidget(true)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("QR Code (1×1)")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showWidgetTypeDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showForegroundColorPicker) {
