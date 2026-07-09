@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QaRd - Quick Info Lock Screen QR Code</title>
+    <meta name="description" content="A simple, elegant lock screen app that displays a QR code for quick info sharing without notifications overlapping." />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="navbar">
+        <div class="logo">QaRd</div>
+        <nav>
+          <a href="#features">Features</a>
+          <a href="#download" class="btn-primary">Download</a>
+        </nav>
+      </header>
+
+      <main class="hero">
+        <div class="hero-content">
+          <h1>Share info <span>instantly</span> from your lock screen.</h1>
+          <p>A simple lock screen app that securely displays a QR code for your essential information. No overlapping notifications, just a clean, accessible scan.</p>
+          <div class="cta-group">
+            <a href="#download" class="btn-large">Get it on Google Play</a>
+            <a href="https://github.com/HereLiesAz/qrLockscreen" class="btn-secondary">View Source</a>
+          </div>
+        </div>
+        
+        <div class="hero-visual">
+          <div class="phone-mockup">
+            <div class="glass-card">
+              <div class="qr-placeholder">
+                <svg width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                  <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                  <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  <line x1="9" y1="15" x2="9.01" y2="15"></line>
+                  <line x1="15" y1="15" x2="15.01" y2="15"></line>
+                </svg>
+              </div>
+              <p class="scan-text">Scan for Info</p>
+            </div>
+            <div class="glow-orb"></div>
+          </div>
+        </div>
+      </main>
+      
+      <section id="features" class="features-section">
+        <h2>Designed for Simplicity</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>Quick Access</h3>
+            <p>Your custom QR code is right there on your lock screen when you need it.</p>
+          </div>
+          <div class="feature-card">
+            <h3>No Clutter</h3>
+            <p>We ensure notifications never overlap your QR code, guaranteeing a fast scan every time.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Custom Info</h3>
+            <p>Easily set up any documents, links, or quick text you want to share with others.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p>&copy; 2026 HereLiesAz. All rights reserved.</p>
+      </footer>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
