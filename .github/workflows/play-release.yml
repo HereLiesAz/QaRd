@@ -27,6 +27,17 @@ on:
         description: "Publish to Play (off = build + upload the .aab artifact only)"
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      track:
+        type: string
+        default: internal
+      status:
+        type: string
+        default: completed
+      publish:
+        type: boolean
+        default: true
 
 jobs:
   bundle-and-publish:

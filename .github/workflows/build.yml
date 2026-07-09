@@ -233,3 +233,13 @@ jobs:
                --target $GITHUB_SHA
              [ -f "$BUILD_TOOLS" ] && gh release upload $TAG_NAME "$BUILD_TOOLS" --clobber
           fi
+
+  deploy-play:
+    needs: build-and-release
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/play-release.yml
+    with:
+      track: internal
+      status: completed
+      publish: true
+    secrets: inherit
