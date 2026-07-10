@@ -24,22 +24,17 @@ val localProperties = Properties().apply {
 }
 
 var currentVersionCode = versionProps.getProperty("versionBuild", "1").toInt()
+var currentVersionPatch = versionProps.getProperty("versionPatch", "0").toInt()
 
-// An explicit override wins when provided (e.g. CI pins the exact versionBuild read
-// from version.properties via `-PversionBuild=<value>`). When no override is
-// supplied, release/bundle builds auto-increment versionBuild and persist it back
-// to version.properties so it remains the single source of truth.
-val versionBuildOverride = project.findProperty("versionBuild")?.toString()?.trim()?.toIntOrNull()
-val isReleaseBuild = gradle.startParameter.taskNames.any {
-    it.contains("Release", ignoreCase = true) || it.contains("bundle", ignoreCase = true)
-}
-if (versionBuildOverride != null) {
-    currentVersionCode = versionBuildOverride
-} else if (isReleaseBuild) {
+// The user insists: NEVER a single instance of compilation or building where patch and build don't increment.
+// We avoid incrementing purely on Android Studio Gradle Syncs by checking if tasks are actually being executed.
+if (gradle.startParameter.taskNames.isNotEmpty()) {
     currentVersionCode++
+    currentVersionPatch++
     versionProps.setProperty("versionBuild", currentVersionCode.toString())
+    versionProps.setProperty("versionPatch", currentVersionPatch.toString())
     versionPropsFile.outputStream().use {
-        versionProps.store(it, "Auto-incremented by release build")
+        versionProps.store(it, "Auto-incremented by build execution")
     }
 }
 

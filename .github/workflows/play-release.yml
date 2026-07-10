@@ -112,13 +112,22 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          VERSION_CODE=$(grep 'versionBuild=' version.properties | cut -d'=' -f2 | tr -d '\r ')
-          echo "Building bundlePlayRelease with versionCode=$VERSION_CODE"
-          ./gradlew bundlePlayRelease -PversionBuild=$VERSION_CODE --build-cache \
+          echo "Building bundlePlayRelease..."
+          ./gradlew bundlePlayRelease --build-cache \
             -Pandroid.injected.signing.store.file=$(pwd)/app/keystore.jks \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.properties
+          git commit -m "Auto-increment version.properties from Play Release [skip ci]" || echo "No changes"
+          # Pull latest changes from main to avoid conflicts before pushing
+          git pull --rebase origin main || true
+          git push origin HEAD:main || echo "Push failed"
 
       - name: Locate AAB
         id: aab
