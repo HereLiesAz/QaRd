@@ -1,7 +1,7 @@
 # Add project specific ProGuard rules here.
-# Minification (isMinifyEnabled) is currently OFF for the release build — see
-# app/build.gradle.kts and docs/play-delivery.md. These rules are kept ready so R8
-# can be enabled safely later without breaking reflection/serialization.
+# Minification (isMinifyEnabled) is ON for the release build — see
+# app/build.gradle.kts and docs/play-delivery.md. These rules
+# keep reflection/serialization working under R8.
 
 # --- kotlinx.serialization -------------------------------------------------
 # The plugin generates a synthetic Companion + .Companion.serializer(); keep
