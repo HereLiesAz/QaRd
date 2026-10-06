@@ -28,7 +28,10 @@ var currentVersionPatch = versionProps.getProperty("versionPatch", "0").toInt()
 
 // The user insists: NEVER a single instance of compilation or building where patch and build don't increment.
 // We avoid incrementing purely on Android Studio Gradle Syncs by checking if tasks are actually being executed.
-if (gradle.startParameter.taskNames.isNotEmpty()) {
+// Central release builds (HereLiesAz/workflows android-play-release / android-github-release)
+// write the canonical version into version.properties themselves, so CI never bumps it again.
+val isCentralCi = System.getenv("GITHUB_ACTIONS") == "true"
+if (gradle.startParameter.taskNames.isNotEmpty() && !isCentralCi) {
     currentVersionCode++
     currentVersionPatch++
     versionProps.setProperty("versionBuild", currentVersionCode.toString())
@@ -41,7 +44,10 @@ if (gradle.startParameter.taskNames.isNotEmpty()) {
 val verMajor = versionProps.getProperty("versionMajor", "1")
 val verMinor = versionProps.getProperty("versionMinor", "0")
 val verPatch = versionProps.getProperty("versionPatch", "0")
-val currentVersionName = "$verMajor.$verMinor.$verPatch"
+// The central Play release passes -PversionCodeOverride / -PversionName; honor them when present.
+val releaseVersionCode = (findProperty("versionCodeOverride") as String?)?.toIntOrNull() ?: currentVersionCode
+val currentVersionName = (findProperty("versionName") as String?)?.takeIf { it.isNotBlank() }
+    ?: "$verMajor.$verMinor.$verPatch"
 
 android {
     namespace = "com.hereliesaz.qard"
@@ -57,7 +63,7 @@ android {
         applicationId = "com.hereliesaz.qard"
         minSdk = 26
         targetSdk = 37
-        versionCode = currentVersionCode
+        versionCode = releaseVersionCode
         versionName = currentVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -100,7 +106,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 on so release builds emit mapping.txt (required by the central Play release).
+            isMinifyEnabled = true
             // Sign with the release keystore from local.properties when available,
             // otherwise fall back to the debug key so the build still succeeds.
             signingConfig = if (hasReleaseKeystore) {
