@@ -142,6 +142,8 @@ kotlin {
 }
 
 dependencies {
+    implementation("com.github.HereLiesAz.AzNavRail:aznavrail-updates-compat:12.5")
+    "playImplementation"("com.github.HereLiesAz.AzNavRail:aznavrail-updates-play-compat:12.5")
     // Core & UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

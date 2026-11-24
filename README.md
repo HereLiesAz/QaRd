@@ -53,3 +53,7 @@ For all other supported Android devices, the widget works perfectly on the **hom
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Android updates
+
+Release builds use AzNavRail 12.5 to check the installed distribution. The FOSS build contains no Play update SDK; the Play build uses Google Play availability. No QR content or widget settings are sent by the checker.

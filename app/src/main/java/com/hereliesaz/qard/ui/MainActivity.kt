@@ -14,6 +14,7 @@ import com.hereliesaz.qard.ui.theme.QaRdTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        checkAppUpdate(this)
         setContent {
             QaRdTheme {
                 ConfigScreen(
