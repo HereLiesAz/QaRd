@@ -1,20 +1,19 @@
 # Privacy Policy for QaRd Widget
 
-**Last Updated: 2026-06-13**
+**Last Updated: 2026-11-23**
 
 Thank you for choosing QaRd Widget. This Privacy Policy is intended to inform you about how we
 handle information when you use our application.
 
 ## 1. Information We Do Not Collect
 
-We want to be crystal clear: **QaRd Widget does not collect, store, or transmit any personal data
-from your device.**
+We want to be crystal clear: **The update checker does not collect or transmit QR content or widget settings.**
 
-The application is designed to be a simple, offline utility. All the data you provide for generating a QR code is stored locally on your device and is never sent to us or any third party.
+QR generation works offline. All the data you provide for generating a QR code is stored locally on your device and is never sent to us or any third party.
 
 Specifically, we do not collect:
 -   Personal identification information (such as your name, email address, or phone number).
--   Device information (such as your device ID, IP address, or location).
+-   Device identifiers or location through the update checker.
 -   Usage data (such as how you interact with the app).
 -   Any data you enter into the widget's configuration.
 
@@ -35,8 +34,7 @@ QaRd Widget uses the following permissions:
   explicitly choose to "Save to Gallery" to export a QR code image.
 - **Standard Widget Permissions:** Required to function as a home screen widget.
 
-The app does not request any permissions that would allow it to access your personal information or
-transmit data over the internet.
+The Internet permission also allows release builds to check for updates via GitHub or Google Play. GitHub receives the ordinary connection IP address; the checker sends no QR content, widget configuration, or app user data.
 
 ## 4. Changes to This Privacy Policy
 

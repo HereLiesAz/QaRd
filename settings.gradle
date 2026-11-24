@@ -13,6 +13,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url "https://raw.githubusercontent.com/HereLiesAz/AzNavRail/update-maven/"
+            content {
+                includeModule("com.github.HereLiesAz.AzNavRail", "aznavrail-updates-compat")
+                includeModule("com.github.HereLiesAz.AzNavRail", "aznavrail-updates-play-compat")
+            }
+        }
         maven { url "https://jitpack.io" }
 
     }
